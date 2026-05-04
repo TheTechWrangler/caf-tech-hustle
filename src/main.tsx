@@ -2593,12 +2593,9 @@ function App() {
       if (!infrastructureUnlocked(state, facility)) {
         return pushLog(state, `${facility.name} is still locked. Build lab progress and meet the listed requirements.`);
       }
-      const cost = infrastructureCost(facility, currentLevel);
-      if (state.cash < cost) return pushLog(state, `Need $${cost} to ${currentLevel ? "upgrade" : "buy"} ${facility.name}.`);
       const nextLevel = currentLevel + 1;
       const upgraded = {
           ...state,
-          ...withCashChange(state, -cost, `Infrastructure Upgrade: ${facility.name}`),
           ownedInfrastructure: {
             ...state.ownedInfrastructure,
             [facility.name]: nextLevel
@@ -2608,7 +2605,7 @@ function App() {
       return pushLogs(
         { ...upgraded, dataCenterUnlocked: upgraded.dataCenterUnlocked || unlockedDataCenter },
         [
-          `${currentLevel ? "Upgraded" : "Bought"} ${facility.name} to level ${nextLevel}. Infrastructure progress is now ${infrastructureProgress(upgraded)}%.`,
+          `${currentLevel ? "Upgraded" : "Built"} ${facility.name} to level ${nextLevel}. Infrastructure progress is now ${infrastructureProgress(upgraded)}%.`,
           ...(unlockedDataCenter ? ["DATA CENTER unlocked. CAF can now take on regional-scale hosting, AI, and infrastructure projects."] : [])
         ]
       );
@@ -2832,7 +2829,7 @@ function App() {
 
   const nextDay = () => {
     const prevSnapshot = game;
-    const computeNextDay = (state: GameState): GameState => {
+    const computeNextDay = (state: GameState): [GameState, number] => {
       const day = state.day + 1;
       const advancedRequests = state.requests.map((request) => ({ ...request, deadline: request.deadline - 1 }));
       const expired = advancedRequests.filter((request) => request.deadline <= 0);
@@ -2908,11 +2905,23 @@ function App() {
           entries.push(`Could not pay $${upkeepDue} upkeep. Stress and trust took a hit.`);
         }
       }
+      let unpaidOperatingCosts = 0;
       if (day % 7 === 0) {
         const opCosts = calculateOperatingCosts(next);
+        const totalOpCost = opCosts.reduce((s, c) => s + c.amount, 0);
+        const cashAvailable = next.cash;
         for (const cost of opCosts) {
           next = withCashChange(next, -cost.amount, cost.label);
           entries.push(`${cost.label.replace("Operating Cost: ", "")}: $${cost.amount}.`);
+        }
+        if (totalOpCost > cashAvailable) {
+          unpaidOperatingCosts = totalOpCost - cashAvailable;
+          const stressPenalty = unpaidOperatingCosts >= 100 ? 2 : 1;
+          next = { ...next, stress: clampStat(next.stress + difficultyStress(next, stressPenalty), 0, 20) };
+          if (unpaidOperatingCosts >= 100) {
+            next = { ...next, communityTrust: Math.max(0, next.communityTrust - 1) };
+          }
+          entries.push(`Could not fully cover operating costs. Unpaid: $${unpaidOperatingCosts}. Stress increased.`);
         }
       }
       if (next.loans.length) {
@@ -3037,7 +3046,7 @@ function App() {
         const donationPressure = backlog > backlogLimit + 2 || activeItemCount(next.inventory) >= stats.storageCapacity;
         if (donationPressure && Math.random() < 0.65) {
           entries.push("A potential donor delayed drop-off because intake/storage is backed up.");
-          return pushLogs(next, entries);
+          return [pushLogs(next, entries), unpaidOperatingCosts];
         }
         const surpriseDonation = generateSurpriseDonation(state.difficulty);
         if (surpriseDonation) {
@@ -3045,11 +3054,11 @@ function App() {
           entries.push(`${surpriseDonation.tier} surprise donation appeared from ${surpriseDonation.donor}.`);
         }
       }
-      return pushLogs(next, entries);
+      return [pushLogs(next, entries), unpaidOperatingCosts];
     };
-    const nextState = computeNextDay(prevSnapshot);
+    const [nextState, unpaid] = computeNextDay(prevSnapshot);
     setGame(nextState);
-    setDailyUpdate(buildDailyUpdate(prevSnapshot, nextState));
+    setDailyUpdate(buildDailyUpdate(prevSnapshot, nextState, unpaid));
   };
 
   const reset = () => startNewGame(newGameDifficulty);
@@ -4226,7 +4235,6 @@ function BuildLabPanel({
           const maxed = level >= station.maxLevel;
           const usableItems = availableLabItems(game, station);
           const assignments = game.labAssignments.filter((assignment) => assignment.station === station.name);
-          const cost = labStationCost(station, level);
           const capReason = labCapReason(game, station.name);
           return (
             <article className={`stationCard ${capReason ? "locked" : maxed ? "maxed" : level ? "upgraded" : "empty"}`} key={station.name}>
@@ -4258,9 +4266,6 @@ function BuildLabPanel({
                   )}
                   {usableItems.length > 4 ? <small>+{usableItems.length - 4} more compatible item{usableItems.length - 4 === 1 ? "" : "s"} in storage.</small> : null}
                 </div>
-                <button onClick={() => onBuyLabEquipment(station.name)} disabled={Boolean(capReason) || maxed || game.cash < cost} title={capReason || `Buy ${station.equipmentName}.`}>
-                  {maxed ? "Max" : `Buy $${cost}`}
-                </button>
               </div>
             </article>
           );
@@ -4330,7 +4335,6 @@ function InfrastructurePanel({
           const level = game.ownedInfrastructure[facility.name] ?? 0;
           const unlocked = infrastructureUnlocked(game, facility);
           const maxed = level >= facility.maxLevel;
-          const cost = infrastructureCost(facility, level);
           const reqs = requirementLabels(facility.requirements);
           const capReason = infrastructureCapReason(game, facility.name);
           return (
@@ -4373,10 +4377,10 @@ function InfrastructurePanel({
               })}
               <button
                 onClick={() => onBuyUpgrade(facility)}
-                disabled={Boolean(capReason) || !unlocked || maxed || game.cash < cost}
-                title={capReason || (unlocked ? `Upgrade ${facility.name}.` : "Meet listed requirements first.")}
+                disabled={Boolean(capReason) || !unlocked || maxed}
+                title={capReason || (unlocked ? `${level ? "Upgrade" : "Build"} ${facility.name}.` : "Meet listed requirements first.")}
               >
-                {maxed ? "Max" : level ? `Upgrade $${cost}` : `Buy $${cost}`}
+                {maxed ? "Max" : level ? "Upgrade" : "Build"}
               </button>
             </article>
           );

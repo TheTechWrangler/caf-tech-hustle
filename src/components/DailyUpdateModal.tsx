@@ -44,6 +44,13 @@ export function DailyUpdateModal({ data, onClose }: DailyUpdateModalProps) {
               ))}
             </div>
           )}
+          {data.unpaidOperatingCosts ? (
+            <div className="dailyUpdateUnpaid">
+              Could not fully cover operating costs.<br />
+              Unpaid amount: ${data.unpaidOperatingCosts}. Stress increased.
+              {data.unpaidOperatingCosts >= 100 ? " Community trust took a hit." : ""}
+            </div>
+          ) : null}
           {data.newWeeklyReport && (
             <div className="dailyUpdateWeekly">Weekly impact report generated.</div>
           )}

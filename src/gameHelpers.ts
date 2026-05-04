@@ -385,7 +385,7 @@ export function calculateOperatingCosts(state: GameState): { label: string; amou
   return costs;
 }
 
-export function buildDailyUpdate(prev: GameState, next: GameState): DailyUpdateData {
+export function buildDailyUpdate(prev: GameState, next: GameState, unpaidOperatingCosts = 0): DailyUpdateData {
   const lines: DailyUpdateLine[] = [];
 
   const todayEntry = next.ledger.find((e) => e.day === next.day);
@@ -429,5 +429,5 @@ export function buildDailyUpdate(prev: GameState, next: GameState): DailyUpdateD
   const netCash = (todayEntry?.endingCash ?? next.cash) - (todayEntry?.startingCash ?? prev.cash);
   const newWeeklyReport = next.weeklyReport !== null && prev.weeklyReport === null;
 
-  return { day: next.day, netCash, lines, newWeeklyReport, newDistricts };
+  return { day: next.day, netCash, lines, newWeeklyReport, newDistricts, unpaidOperatingCosts: unpaidOperatingCosts > 0 ? unpaidOperatingCosts : undefined };
 }

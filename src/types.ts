@@ -312,6 +312,7 @@ export type DailyUpdateData = {
   lines: DailyUpdateLine[];
   newWeeklyReport: boolean;
   newDistricts: string[];
+  unpaidOperatingCosts?: number;
 };
 
 export type GameState = {
