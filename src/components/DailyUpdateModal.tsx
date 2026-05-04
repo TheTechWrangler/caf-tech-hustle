@@ -8,7 +8,7 @@ interface DailyUpdateModalProps {
 
 export function DailyUpdateModal({ data, onClose }: DailyUpdateModalProps) {
   const cashColor = data.netCash > 0 ? "#6fcf97" : data.netCash < 0 ? "#eb5757" : "#aaa";
-  const cashSign = data.netCash > 0 ? "+" : "";
+  const cashSign = data.netCash > 0 ? "+" : data.netCash < 0 ? "-" : "";
 
   return (
     <div className="modalOverlay" onClick={onClose}>

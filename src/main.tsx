@@ -87,7 +87,7 @@ import {
   baseFairValue, scrapValue, pricingSnapshot,
   isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem,
   processedItemCount, assignedTypeCount, unmetInfrastructureRequirements,
-  buildDailyUpdate
+  buildDailyUpdate, calculateOperatingCosts
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -2906,6 +2906,13 @@ function App() {
             hostedServices: serviceUptimeChange(next.hostedServices, -3)
           };
           entries.push(`Could not pay $${upkeepDue} upkeep. Stress and trust took a hit.`);
+        }
+      }
+      if (day % 7 === 0) {
+        const opCosts = calculateOperatingCosts(next);
+        for (const cost of opCosts) {
+          next = withCashChange(next, -cost.amount, cost.label);
+          entries.push(`${cost.label.replace("Operating Cost: ", "")}: $${cost.amount}.`);
         }
       }
       if (next.loans.length) {

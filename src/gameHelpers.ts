@@ -330,6 +330,61 @@ export function unmetInfrastructureRequirements(state: GameState, requirements: 
   return unmet;
 }
 
+export function calculateOperatingCosts(state: GameState): { label: string; amount: number }[] {
+  const costs: { label: string; amount: number }[] = [];
+  const week = Math.floor((state.day - 1) / 7) + 1;
+  const infra = infrastructureProgress(state);
+  const lab = labProgress(state);
+  const activeHosting = completedHostingDefinitions(state).length;
+  const usedSlots = hostingSlotsUsed(state.hostedServices);
+
+  // Utilities — unlocks after week 4 or rep 100; scales with infrastructure
+  if (week > 4 || state.reputation >= 100) {
+    const base = 12;
+    const infraBonus = Math.floor(infra / 20) * 6;
+    costs.push({ label: "Operating Cost: Utilities", amount: base + infraBonus });
+  }
+
+  // Internet / Bandwidth — unlocks when any hosting is active; scales with slots used
+  if (activeHosting > 0 || usedSlots > 0) {
+    const base = 15;
+    const slotBonus = usedSlots * 4;
+    const projectBonus = activeHosting * 8;
+    costs.push({ label: "Operating Cost: Internet / Bandwidth", amount: base + slotBonus + projectBonus });
+  }
+
+  // Insurance — unlocks at rep 150 or infra > 25%
+  if (state.reputation >= 150 || infra >= 25) {
+    const base = 20;
+    const infraBonus = Math.floor(infra / 25) * 10;
+    costs.push({ label: "Operating Cost: Insurance", amount: base + infraBonus });
+  }
+
+  // Tools / Software — unlocks when lab progress > 10%
+  if (lab >= 10) {
+    const base = 10;
+    const labBonus = Math.floor(lab / 20) * 8;
+    costs.push({ label: "Operating Cost: Tools / Software", amount: base + labBonus });
+  }
+
+  // Transport / Pickup Fuel — unlocks after week 2; scales with reputation as proxy for activity
+  if (week > 2) {
+    const base = 8;
+    const repBonus = Math.floor(state.reputation / 50) * 5;
+    costs.push({ label: "Operating Cost: Transport / Pickup Fuel", amount: base + repBonus });
+  }
+
+  // Tax / Filing / Compliance — unlocks when grants have been applied or rep > 200
+  const hasGrants = state.grants.some((g) => g.status === "Approved" || g.status === "On Cooldown" || g.status === "Rejected");
+  if (hasGrants || state.reputation >= 200) {
+    const base = 18;
+    const repBonus = Math.floor(state.reputation / 100) * 10;
+    costs.push({ label: "Operating Cost: Tax / Filing / Compliance", amount: base + repBonus });
+  }
+
+  return costs;
+}
+
 export function buildDailyUpdate(prev: GameState, next: GameState): DailyUpdateData {
   const lines: DailyUpdateLine[] = [];
 
