@@ -1523,6 +1523,31 @@ h2 {
   font-size: 12px;
 }
 
+.modalCloseSecondary {
+  right: 7rem;
+}
+
+.modalHeader {
+  flex-shrink: 0;
+  padding-right: 9rem;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #3a3a52;
+}
+
+.modalBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ledgerPanel,
+.reportHistory {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .modalPanel .panelTitle {
   padding-right: 74px;
 }
@@ -1836,6 +1861,19 @@ h2 {
 .ledgerHeader span {
   font-size: 12px;
   font-weight: 800;
+}
+
+.ledgerTransactions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #3a3a52;
+}
+
+.ledgerTransactions span {
+  font-size: 11px;
 }
 
 .ledgerPositive {

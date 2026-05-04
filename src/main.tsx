@@ -1781,6 +1781,19 @@ function App() {
 
   const dismissWeeklyReport = () => setGame((state) => ({ ...state, weeklyReport: null }));
 
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (game.weeklyReport) { dismissWeeklyReport(); return; }
+      if (donationItemId) { setDonationItemId(null); return; }
+      if (savesOpen) { setSavesOpen(false); return; }
+      if (showLedger) { setShowLedger(false); return; }
+      if (showReportHistory) { setShowReportHistory(false); return; }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [game.weeklyReport, donationItemId, savesOpen, showLedger, showReportHistory]);
+
   const [selectedDistrict, setSelectedDistrict] = React.useState<DistrictName>(() => locationToDistrict(newGame().location));
 
   React.useEffect(() => {
@@ -4590,19 +4603,23 @@ function ReportHistoryModal({ reports, onClose }: { reports: WeeklyReport[]; onC
     <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Impact Report History">
       <section className="modalPanel reportHistory">
         <button className="modalClose" onClick={onClose}>Close</button>
-        <button className="modalClose" style={{ right: "7rem" }} onClick={() => exportImpactHistoryTxt(reports)}>Export TXT</button>
-        <h2>[ IMPACT HISTORY ]</h2>
-        {reports.length === 0 ? (
-          <p className="emptyZone">No reports yet. Complete a full week first.</p>
-        ) : (
-          reports.map((r) => (
-            <article key={`${r.week}-${r.day}`} className="historyReportCard">
-              <strong>Week {r.week} — Day {r.day}</strong>
-              <p>"{r.flavor}"</p>
-              <span>Donated {r.donated} | Requests {r.requestsFulfilled} | Sold {r.itemsSold} | Scrapped {r.itemsScrapped} | Repairs {r.repairsSucceeded}/{r.repairsFailed}/{r.repairsJunked} | Grants ${r.grantIncome} | Hosting ${r.hostingIncome} | Net ${r.cashEarned - r.cashSpent}</span>
-            </article>
-          ))
-        )}
+        <button className="modalClose modalCloseSecondary" onClick={() => exportImpactHistoryTxt(reports)}>Export TXT</button>
+        <div className="modalHeader">
+          <h2>[ IMPACT HISTORY ]</h2>
+        </div>
+        <div className="modalBody">
+          {reports.length === 0 ? (
+            <p className="emptyZone">No reports yet. Complete a full week first.</p>
+          ) : (
+            reports.map((r) => (
+              <article key={`${r.week}-${r.day}`} className="historyReportCard">
+                <strong>Week {r.week} — Day {r.day}</strong>
+                <p>"{r.flavor}"</p>
+                <span>Donated {r.donated} | Requests {r.requestsFulfilled} | Sold {r.itemsSold} | Scrapped {r.itemsScrapped} | Repairs {r.repairsSucceeded}/{r.repairsFailed}/{r.repairsJunked} | Grants ${r.grantIncome} | Hosting ${r.hostingIncome} | Net ${r.cashEarned - r.cashSpent}</span>
+              </article>
+            ))
+          )}
+        </div>
       </section>
     </div>
   );
@@ -4651,33 +4668,46 @@ function LedgerModal({ ledger, currentCash, onClose }: { ledger: DailyLedgerEntr
     <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Accounting Journal">
       <section className="modalPanel ledgerPanel">
         <button className="modalClose" onClick={onClose}>Close</button>
-        <button className="modalClose" style={{ right: "7rem" }} onClick={() => exportLedgerTxt(rows)}>Export TXT</button>
-        <h2>[ ACCOUNTING JOURNAL ]</h2>
-        <p className="ledgerIntro">Daily money movement totals. Individual transactions stay in the daily feed.</p>
-        {rows.length === 0 ? (
-          <p className="emptyZone">No ledger entries yet.</p>
-        ) : (
-          <div className="ledgerList">
-            {rows.map((entry) => {
-              const net = entry.income - entry.expenses;
-              return (
-                <article className="ledgerCard" key={entry.day}>
-                  <div className="ledgerHeader">
-                    <strong>Day {entry.day}</strong>
-                    <span className={net >= 0 ? "ledgerPositive" : "ledgerNegative"}>{net >= 0 ? "+" : "-"}${Math.abs(net)}</span>
-                  </div>
-                  <div className="ledgerGrid">
-                    <span>Starting Cash: ${entry.startingCash}</span>
-                    <span className="ledgerPositive">Income: +${entry.income}</span>
-                    <span className="ledgerNegative">Expenses: -${entry.expenses}</span>
-                    <span>Net: {net >= 0 ? "+" : "-"}${Math.abs(net)}</span>
-                    <span>Ending Cash: ${entry.endingCash}</span>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
+        <button className="modalClose modalCloseSecondary" onClick={() => exportLedgerTxt(rows)}>Export TXT</button>
+        <div className="modalHeader">
+          <h2>[ ACCOUNTING JOURNAL ]</h2>
+          <p className="ledgerIntro">Daily money movement totals. Individual transactions stay in the daily feed.</p>
+        </div>
+        <div className="modalBody">
+          {rows.length === 0 ? (
+            <p className="emptyZone">No ledger entries yet.</p>
+          ) : (
+            <div className="ledgerList">
+              {rows.map((entry) => {
+                const net = entry.income - entry.expenses;
+                return (
+                  <article className="ledgerCard" key={entry.day}>
+                    <div className="ledgerHeader">
+                      <strong>Day {entry.day}</strong>
+                      <span className={net >= 0 ? "ledgerPositive" : "ledgerNegative"}>{net >= 0 ? "+" : "-"}${Math.abs(net)}</span>
+                    </div>
+                    <div className="ledgerGrid">
+                      <span>Starting Cash: ${entry.startingCash}</span>
+                      <span className="ledgerPositive">Income: +${entry.income}</span>
+                      <span className="ledgerNegative">Expenses: -${entry.expenses}</span>
+                      <span>Net: {net >= 0 ? "+" : "-"}${Math.abs(net)}</span>
+                      <span>Ending Cash: ${entry.endingCash}</span>
+                    </div>
+                    {entry.transactions && entry.transactions.length > 0 && (
+                      <div className="ledgerTransactions">
+                        {entry.transactions.map((tx, i) => (
+                          <span key={i} className={tx.amount >= 0 ? "ledgerPositive" : "ledgerNegative"}>
+                            {tx.amount >= 0 ? "+" : "-"}${Math.abs(tx.amount)} {tx.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
