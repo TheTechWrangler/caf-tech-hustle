@@ -1110,6 +1110,24 @@ h2 {
   color: #ffb0c4 !important;
 }
 
+.unmetReqs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unmetReqsLabel {
+  color: #ffb0c4;
+  font-weight: 900;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.unmetReqRow {
+  color: #c8d8f0;
+  font-size: 11px;
+}
+
 .hostedStrip {
   max-height: 54px;
   margin-bottom: 8px;
@@ -1123,6 +1141,7 @@ h2 {
 
 .infraList {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 7px;
   flex: 1;
   max-height: none;
@@ -1347,6 +1366,7 @@ h2 {
 
 .stationGrid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 7px;
   flex: 1;
   max-height: none;
@@ -1964,10 +1984,12 @@ h2 {
 }
 
 .districtMapCard.locked {
-  opacity: 0.42;
   border-style: dashed;
   border-color: #3a3a52;
+  background: #0d0d1a;
   cursor: default;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .districtMapCard.selected {
@@ -1990,7 +2012,11 @@ h2 {
 }
 
 .districtMapCard.locked .districtMapName {
-  color: #61637c;
+  color: #8890a8;
+}
+
+.districtMapCard.locked .districtMapDescription {
+  color: #616680;
 }
 
 .districtMapCard.selected .districtMapName {
@@ -2006,7 +2032,7 @@ h2 {
 }
 
 .districtMapStatus.locked {
-  color: #3a3a52;
+  color: #61637c;
 }
 
 .districtMapDescription {
@@ -2020,22 +2046,28 @@ h2 {
 
 .districtRequirements {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
+  text-align: left;
 }
 
-.districtRequirements span {
+.districtReqLabel {
   color: #ffb0c4;
   font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0;
-  line-height: 1.1;
-  text-transform: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 1px;
 }
 
-.districtRequirements span.met {
-  color: #83ff8f;
+.districtRequirements span {
+  color: #d4a8b8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: none;
 }
 
 .dataCenterBox {
@@ -2078,6 +2110,11 @@ h2 {
   font-size: 12px;
   font-weight: 800;
   line-height: 1.25;
+}
+
+.dataCenterBox .requestMeta span:not(.met) {
+  color: #ffb0c4;
+  border-color: #5a3a44;
 }
 
 .dataCenterBox .requestMeta span.met {

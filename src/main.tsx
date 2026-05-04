@@ -85,7 +85,8 @@ import {
   dataCenterRequirements, districtUnlockHint, districtRequirementRows,
   dataCenterUnlockedFor, donatedDeviceCount, infrastructureLevelTotal,
   baseFairValue, scrapValue, pricingSnapshot,
-  isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem
+  isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem,
+  processedItemCount, assignedTypeCount, unmetInfrastructureRequirements
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -488,15 +489,6 @@ function labStationDefinition(name: LabStationName) {
   return labStationCatalog.find((station) => station.name === name) ?? labStationCatalog[0];
 }
 
-function processedItemCount(state: Pick<GameState, "inventory" | "labAssignments">) {
-  const inactiveItems = state.inventory.filter((item) => isInactiveStatus(item.status)).length;
-  const purchasedLabItems = state.labAssignments.filter((assignment) => assignment.source === "Purchased").length;
-  return inactiveItems + purchasedLabItems;
-}
-
-function assignedTypeCount(state: Pick<GameState, "labAssignments">, types: ItemType[]) {
-  return state.labAssignments.filter((assignment) => assignment.itemType && types.includes(assignment.itemType)).length;
-}
 
 
 function labMilestone(progress: number) {
@@ -3588,6 +3580,7 @@ function App() {
             onTakeLoan={takeLoan}
             onUseStorageForLab={useStorageForLab}
             onBuyLabEquipment={buyLabEquipment}
+            onStageInfrastructureItem={stageItemForInfrastructure}
           />
         </section>
 
@@ -4113,7 +4106,8 @@ function OpsPanel({
   onBuyUpgrade,
   onTakeLoan,
   onUseStorageForLab,
-  onBuyLabEquipment
+  onBuyLabEquipment,
+  onStageInfrastructureItem
 }: {
   activeTab: OpsTab;
   onTabChange: (tab: OpsTab) => void;
@@ -4126,6 +4120,7 @@ function OpsPanel({
   onTakeLoan: (loan: LoanDefinition) => void;
   onUseStorageForLab: (station: LabStationName, itemId: string) => void;
   onBuyLabEquipment: (station: LabStationName) => void;
+  onStageInfrastructureItem: (facility: InfrastructureDefinition, item: InventoryItem) => void;
 }) {
   return (
     <>
@@ -4143,6 +4138,7 @@ function OpsPanel({
           hostingUsed={hostingUsed}
           avgUptime={avgUptime}
           onBuyUpgrade={onBuyUpgrade}
+          onStageItem={onStageInfrastructureItem}
         />
       ) : null}
       {activeTab === "Build the Lab" ? (
@@ -4261,13 +4257,15 @@ function InfrastructurePanel({
   stats,
   hostingUsed,
   avgUptime,
-  onBuyUpgrade
+  onBuyUpgrade,
+  onStageItem
 }: {
   game: GameState;
   stats: ReturnType<typeof infrastructureStats>;
   hostingUsed: number;
   avgUptime: number;
   onBuyUpgrade: (facility: InfrastructureDefinition) => void;
+  onStageItem: (facility: InfrastructureDefinition, item: InventoryItem) => void;
 }) {
   const progress = infrastructureProgress(game);
   const tier = infrastructureTierInfo(progress);
@@ -4331,8 +4329,30 @@ function InfrastructurePanel({
                 <span>Host +{facility.hostingBonus}</span>
                 <span>Reliability +{facility.reliabilityBonus}</span>
               </div>
-              {reqs.length ? <small>Req: {reqs.join(" | ")}</small> : <small>Req: none</small>}
+              {!unlocked ? (
+                <div className="unmetReqs">
+                  <small className="unmetReqsLabel">Still needed:</small>
+                  {unmetInfrastructureRequirements(game, facility.requirements).map((row, i) => (
+                    <small key={i} className="unmetReqRow">– {row}</small>
+                  ))}
+                </div>
+              ) : (
+                reqs.length ? <small>Req: {reqs.join(" | ")}</small> : <small>Req: none</small>
+              )}
               {capReason ? <small className="capWarning">{capReason}</small> : null}
+              {infrastructureItemTypesNeeded(facility).map((need) => {
+                const matches = matchingStorageForTypes(game.inventory, need.types).slice(0, 3);
+                if (!matches.length) return null;
+                return (
+                  <div key={need.label} className="labStorageChoices">
+                    {matches.map((item) => (
+                      <button key={item.id} onClick={() => onStageItem(facility, item)} title={`Use ${item.name} for ${facility.name}`}>
+                        Use {item.name} from Storage
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
               <button
                 onClick={() => onBuyUpgrade(facility)}
                 disabled={Boolean(capReason) || !unlocked || maxed || game.cash < cost}
@@ -4752,8 +4772,9 @@ function DistrictsPanel({ unlockedDistricts, districtProgress: _districtProgress
               <span className="districtMapDescription">{district.description}</span>
               {!unlocked ? (
                 <span className="districtRequirements">
-                  {requirements.map((requirement) => (
-                    <span key={requirement.label} className={requirement.met ? "met" : ""}>{requirement.label} {requirement.met ? "OK" : "NO"}</span>
+                  <span className="districtReqLabel">Still needed:</span>
+                  {requirements.filter((req) => !req.met).map((req) => (
+                    <span key={req.label}>– {req.label}</span>
                   ))}
                 </span>
               ) : null}

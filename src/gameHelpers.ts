@@ -1,4 +1,4 @@
-import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality } from "./types";
+import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality, InfrastructureDefinition, LabStationName, ItemType } from "./types";
 import { HOSTING_WEEKLY_PAYOUT_FACTOR } from "./constants";
 import { hostingProjectCatalog, grantCatalog, districtNames } from "./data";
 import { infrastructureStats, infrastructureProgress, progressMeets, conditionFromStatus, conditionMultiplier, isInactiveStatus, isReadyStatus, hostingSlotsUsed, labProgress, stableRatio, buyPriceHeat } from "./utils";
@@ -261,4 +261,71 @@ export function refreshPricingForItem<T extends InventoryItem>(item: T, status =
     pricing: pricingSnapshot(item, status, condition, buyPrice)
   };
   return nextItem;
+}
+
+export function processedItemCount(state: Pick<GameState, "inventory" | "labAssignments">): number {
+  const inactiveItems = state.inventory.filter((item) => isInactiveStatus(item.status)).length;
+  const purchasedLabItems = state.labAssignments.filter((assignment) => assignment.source === "Purchased").length;
+  return inactiveItems + purchasedLabItems;
+}
+
+export function assignedTypeCount(state: Pick<GameState, "labAssignments">, types: ItemType[]): number {
+  return state.labAssignments.filter((assignment) => assignment.itemType && types.includes(assignment.itemType)).length;
+}
+
+export function unmetInfrastructureRequirements(state: GameState, requirements: InfrastructureDefinition["requirements"]): string[] {
+  const unmet: string[] = [];
+  const progress = labProgress(state);
+  const stats = infrastructureStats(state.ownedInfrastructure, state.labStations);
+  if (requirements.labProgress && !progressMeets(progress, requirements.labProgress)) {
+    unmet.push(`Lab progress: ${progress}% / ${requirements.labProgress}%`);
+  }
+  if (requirements.anyStationOrProcessed) {
+    const { station, level, processedItems } = requirements.anyStationOrProcessed;
+    const stationLevel = state.labStations[station] ?? 0;
+    const processed = processedItemCount(state);
+    if (stationLevel < level && processed < processedItems) {
+      unmet.push(`${station}: Level ${stationLevel} / Level ${level}  OR  ${processed} / ${processedItems} processed items`);
+    }
+  }
+  if (requirements.stations) {
+    Object.entries(requirements.stations).forEach(([station, required]) => {
+      const current = state.labStations[station as LabStationName] ?? 0;
+      if (current < (required ?? 0)) unmet.push(`${station}: Level ${current} / Level ${required}`);
+    });
+  }
+  if (requirements.processedItems) {
+    const processed = processedItemCount(state);
+    if (processed < requirements.processedItems) unmet.push(`Processed items: ${processed} / ${requirements.processedItems}`);
+  }
+  if (requirements.assignedTypes) {
+    Object.entries(requirements.assignedTypes).forEach(([type, count]) => {
+      const current = assignedTypeCount(state, [type as ItemType]);
+      if (current < (count ?? 0)) unmet.push(`${type} assigned: ${current} / ${count}`);
+    });
+  }
+  requirements.assignedAny?.forEach((req) => {
+    const current = assignedTypeCount(state, req.types);
+    if (current < req.count) unmet.push(`${req.label}: ${current} / ${req.count}`);
+  });
+  if (requirements.hostingCapacity && stats.hostingCapacity < requirements.hostingCapacity) {
+    unmet.push(`Hosting slots: ${stats.hostingCapacity} / ${requirements.hostingCapacity}`);
+  }
+  if (requirements.deploymentHistory) {
+    const processed = processedItemCount(state);
+    if (processed < requirements.deploymentHistory) unmet.push(`Deployment history: ${processed} / ${requirements.deploymentHistory}`);
+  }
+  if (requirements.reputation && state.reputation < requirements.reputation) {
+    unmet.push(`Reputation: ${state.reputation} / ${requirements.reputation}`);
+  }
+  if (requirements.communityTrust && state.communityTrust < requirements.communityTrust) {
+    unmet.push(`Trust: ${state.communityTrust} / ${requirements.communityTrust}`);
+  }
+  if (requirements.completedRequests && state.completedRequests < requirements.completedRequests) {
+    unmet.push(`Requests: ${state.completedRequests} / ${requirements.completedRequests}`);
+  }
+  if (requirements.facility && !(state.ownedInfrastructure[requirements.facility] > 0)) {
+    unmet.push(`${requirements.facility}: not yet owned`);
+  }
+  return unmet;
 }
