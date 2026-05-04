@@ -1,0 +1,72 @@
+{
+  "name": "caf-tech-hustle",
+  "version": "5.0.0",
+  "private": true,
+  "description": "A retro nonprofit tech arcade management game",
+  "author": "Cloud Access Foundation / Community Arcade Foundation",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "tsc && vite build && tsc -p tsconfig.electron.json",
+    "start": "npm run build && electron .",
+    "package": "npm run build && electron-builder --win dir",
+    "dist": "npm run build && electron-builder --win nsis",
+    "preview": "vite --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
+    "lucide-react": "^0.545.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "wait-on": "^8.0.4"
+  },
+  "devDependencies": {
+    "electron-builder": "^26.0.12",
+    "electron": "^38.2.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  },
+  "build": {
+    "appId": "org.cloudaccessfoundation.caftechhustle",
+    "productName": "CAF: Tech Hustle",
+    "artifactName": "CAF Tech Hustle Setup ${version}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CAF: Tech Hustle",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
