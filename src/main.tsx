@@ -4574,6 +4574,32 @@ function ReportHistoryModal({ reports, onClose }: { reports: WeeklyReport[]; onC
   );
 }
 
+function exportLedgerTxt(rows: (DailyLedgerEntry & { endingCash: number })[]) {
+  const sorted = [...rows].sort((a, b) => a.day - b.day);
+  const lines: string[] = [
+    "CAF Tech Hustle — Accounting Journal",
+    "=====================================",
+    ""
+  ];
+  for (const entry of sorted) {
+    const net = entry.income - entry.expenses;
+    lines.push(`Day ${entry.day}`);
+    lines.push(`  Starting Cash : $${entry.startingCash}`);
+    lines.push(`  Income        : +$${entry.income}`);
+    lines.push(`  Expenses      : -$${entry.expenses}`);
+    lines.push(`  Net           : ${net >= 0 ? "+" : "-"}$${Math.abs(net)}`);
+    lines.push(`  Ending Cash   : $${entry.endingCash}`);
+    lines.push("");
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "caf-accounting-journal.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function LedgerModal({ ledger, currentCash, onClose }: { ledger: DailyLedgerEntry[]; currentCash: number; onClose: () => void }) {
   const rows = [...ledger]
     .map((entry, index, entries) => index === entries.length - 1 ? { ...entry, endingCash: currentCash } : entry)
@@ -4582,6 +4608,7 @@ function LedgerModal({ ledger, currentCash, onClose }: { ledger: DailyLedgerEntr
     <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Accounting Journal">
       <section className="modalPanel ledgerPanel">
         <button className="modalClose" onClick={onClose}>Close</button>
+        <button className="modalClose" style={{ right: "7rem" }} onClick={() => exportLedgerTxt(rows)}>Export TXT</button>
         <h2>[ ACCOUNTING JOURNAL ]</h2>
         <p className="ledgerIntro">Daily money movement totals. Individual transactions stay in the daily feed.</p>
         {rows.length === 0 ? (
