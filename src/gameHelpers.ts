@@ -1,4 +1,4 @@
-import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality, InfrastructureDefinition, LabStationName, ItemType } from "./types";
+import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality, InfrastructureDefinition, LabStationName, ItemType, DailyUpdateData, DailyUpdateLine } from "./types";
 import { HOSTING_WEEKLY_PAYOUT_FACTOR } from "./constants";
 import { hostingProjectCatalog, grantCatalog, districtNames } from "./data";
 import { infrastructureStats, infrastructureProgress, progressMeets, conditionFromStatus, conditionMultiplier, isInactiveStatus, isReadyStatus, hostingSlotsUsed, labProgress, stableRatio, buyPriceHeat } from "./utils";
@@ -328,4 +328,51 @@ export function unmetInfrastructureRequirements(state: GameState, requirements: 
     unmet.push(`${requirements.facility}: not yet owned`);
   }
   return unmet;
+}
+
+export function buildDailyUpdate(prev: GameState, next: GameState): DailyUpdateData {
+  const lines: DailyUpdateLine[] = [];
+
+  const todayEntry = next.ledger.find((e) => e.day === next.day);
+  const transactions = todayEntry?.transactions ?? [];
+
+  for (const tx of transactions) {
+    if (tx.amount > 0) {
+      lines.push({ label: tx.label, amount: tx.amount, kind: "income" });
+    } else if (tx.amount < 0) {
+      lines.push({ label: tx.label, amount: tx.amount, kind: "expense" });
+    }
+  }
+
+  const prevGrantIds = new Set(prev.grants.map((g) => `${g.id}:${g.status}`));
+  for (const g of next.grants) {
+    const prevG = prev.grants.find((p) => p.id === g.id);
+    if (!prevG) continue;
+    if (prevG.status === "Pending Review" && g.status === "Approved") {
+      lines.push({ label: `Grant approved: ${g.id}`, kind: "good" });
+    } else if (prevG.status === "Pending Review" && g.status === "Rejected") {
+      lines.push({ label: `Grant rejected: ${g.id}`, kind: "warning" });
+    }
+  }
+  void prevGrantIds;
+
+  if (prev.reputation !== next.reputation) {
+    const delta = next.reputation - prev.reputation;
+    lines.push({ label: "Reputation", amount: delta, kind: delta > 0 ? "good" : "warning" });
+  }
+  if (prev.communityTrust !== next.communityTrust) {
+    const delta = next.communityTrust - prev.communityTrust;
+    lines.push({ label: "Community Trust", amount: delta, kind: delta > 0 ? "good" : "warning" });
+  }
+  if (prev.stress !== next.stress) {
+    const delta = next.stress - prev.stress;
+    lines.push({ label: "Stress", amount: delta, kind: delta > 0 ? "warning" : "good" });
+  }
+
+  const newDistricts = next.unlockedDistricts.filter((d) => !prev.unlockedDistricts.includes(d));
+
+  const netCash = (todayEntry?.endingCash ?? next.cash) - (todayEntry?.startingCash ?? prev.cash);
+  const newWeeklyReport = next.weeklyReport !== null && prev.weeklyReport === null;
+
+  return { day: next.day, netCash, lines, newWeeklyReport, newDistricts };
 }

@@ -299,6 +299,21 @@ export type DailyLedgerEntry = {
 
 export type DistrictName = "Garage" | "Neighborhood" | "Downtown" | "Schools" | "Library" | "Senior Center" | "Industrial Park" | "Partner City";
 
+export type DailyUpdateLine = {
+  label: string;
+  amount?: number;
+  note?: string;
+  kind: "income" | "expense" | "event" | "info" | "warning" | "good";
+};
+
+export type DailyUpdateData = {
+  day: number;
+  netCash: number;
+  lines: DailyUpdateLine[];
+  newWeeklyReport: boolean;
+  newDistricts: string[];
+};
+
 export type GameState = {
   day: number;
   cash: number;

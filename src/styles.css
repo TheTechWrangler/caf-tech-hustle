@@ -3106,3 +3106,74 @@ select {
 .grantBad {
   color: #ffb0c4 !important;
 }
+
+/* ── Daily Update Modal ── */
+.dailyUpdateModal {
+  max-width: 420px;
+  width: 95vw;
+}
+.dailyUpdateNet {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 0 12px;
+  border-bottom: 1px solid #2a2a3a;
+  margin-bottom: 10px;
+}
+.dailyUpdateLines {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dailyUpdateLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  gap: 8px;
+}
+.dailyUpdateLineLabel {
+  color: #c8cce0;
+}
+.dailyUpdateLineAmount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.dailyUpdateLine.income .dailyUpdateLineAmount { color: #6fcf97; }
+.dailyUpdateLine.expense .dailyUpdateLineAmount { color: #eb5757; }
+.dailyUpdateLine.good .dailyUpdateLineLabel,
+.dailyUpdateLine.good .dailyUpdateLineAmount { color: #6fcf97; }
+.dailyUpdateLine.warning .dailyUpdateLineLabel,
+.dailyUpdateLine.warning .dailyUpdateLineAmount { color: #ffb0c4; }
+.dailyUpdateLine.event .dailyUpdateLineLabel { color: #ffd857; }
+.dailyUpdateLineNote {
+  font-size: 10px;
+  color: #7e819a;
+  font-style: italic;
+}
+.dailyUpdateDistricts {
+  margin-top: 10px;
+}
+.dailyUpdateDistrictUnlock {
+  font-size: 12px;
+  color: #7ee7c8;
+  font-weight: 700;
+  padding: 3px 0;
+}
+.dailyUpdateWeekly {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #ffd857;
+  font-style: italic;
+}
+.modalFooter {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-top: 1px solid #1e1e2e;
+  display: flex;
+  justify-content: flex-end;
+}

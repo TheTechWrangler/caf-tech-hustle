@@ -34,7 +34,7 @@ import type {
   RequestTemplate, DonationTierConfig, LabStationDefinition,
   InfrastructureDefinition, LoanDefinition, DistrictConfig,
   PriceHeat, BusinessOffer, BulkLotDefinition, MapUpgradePhase,
-  OperationsLayout
+  OperationsLayout, DailyUpdateData
 } from "./types";
 import {
   locations, shopLocations, coreMarketLocations, mainScreens, districtLocations,
@@ -86,7 +86,8 @@ import {
   dataCenterUnlockedFor, donatedDeviceCount, infrastructureLevelTotal,
   baseFairValue, scrapValue, pricingSnapshot,
   isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem,
-  processedItemCount, assignedTypeCount, unmetInfrastructureRequirements
+  processedItemCount, assignedTypeCount, unmetInfrastructureRequirements,
+  buildDailyUpdate
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -103,6 +104,7 @@ import { OperationsDemandPanel } from "./components/OperationsDemandPanel";
 import { MatchingItemButtons } from "./components/MatchingItemButtons";
 import { DonationEventCard } from "./components/DonationEventCard";
 import { HostingProjectCard } from "./components/HostingProjectCard";
+import { DailyUpdateModal } from "./components/DailyUpdateModal";
 
 
 function districtMarketStores(district: DistrictName) {
@@ -1766,6 +1768,7 @@ function App() {
   const [showHistory, setShowHistory] = React.useState(false);
   const [showReportHistory, setShowReportHistory] = React.useState(false);
   const [showLedger, setShowLedger] = React.useState(false);
+  const [dailyUpdate, setDailyUpdate] = React.useState<DailyUpdateData | null>(null);
   const [newGameDifficulty, setNewGameDifficulty] = React.useState<Difficulty>("Normal");
   const [selectedOpsItemId, setSelectedOpsItemId] = React.useState<string | null>(null);
   const [selectedOpsDemand, setSelectedOpsDemand] = React.useState<string | null>(null);
@@ -1776,6 +1779,7 @@ function App() {
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (dailyUpdate) { setDailyUpdate(null); return; }
       if (game.weeklyReport) { dismissWeeklyReport(); return; }
       if (donationItemId) { setDonationItemId(null); return; }
       if (savesOpen) { setSavesOpen(false); return; }
@@ -1784,7 +1788,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [game.weeklyReport, donationItemId, savesOpen, showLedger, showReportHistory]);
+  }, [dailyUpdate, game.weeklyReport, donationItemId, savesOpen, showLedger, showReportHistory]);
 
   const [selectedDistrict, setSelectedDistrict] = React.useState<DistrictName>(() => locationToDistrict(newGame().location));
 
@@ -2827,7 +2831,8 @@ function App() {
   };
 
   const nextDay = () => {
-    setGame((state) => {
+    const prevSnapshot = game;
+    const computeNextDay = (state: GameState): GameState => {
       const day = state.day + 1;
       const advancedRequests = state.requests.map((request) => ({ ...request, deadline: request.deadline - 1 }));
       const expired = advancedRequests.filter((request) => request.deadline <= 0);
@@ -3034,7 +3039,10 @@ function App() {
         }
       }
       return pushLogs(next, entries);
-    });
+    };
+    const nextState = computeNextDay(prevSnapshot);
+    setGame(nextState);
+    setDailyUpdate(buildDailyUpdate(prevSnapshot, nextState));
   };
 
   const reset = () => startNewGame(newGameDifficulty);
@@ -3650,6 +3658,9 @@ function App() {
             setDonationItemId(null);
           }}
         />
+      ) : null}
+      {dailyUpdate && !game.weeklyReport ? (
+        <DailyUpdateModal data={dailyUpdate} onClose={() => setDailyUpdate(null)} />
       ) : null}
       {game.weeklyReport ? (
         <WeeklyReportModal report={game.weeklyReport} onClose={dismissWeeklyReport} />
