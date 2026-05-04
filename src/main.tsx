@@ -4556,11 +4556,41 @@ function WeeklyReportModal({ report, onClose }: { report: WeeklyReport; onClose:
   );
 }
 
+function exportImpactHistoryTxt(reports: WeeklyReport[]) {
+  const lines: string[] = [
+    "CAF Tech Hustle — Impact History",
+    "=================================",
+    ""
+  ];
+  for (const r of reports) {
+    const net = r.cashEarned - r.cashSpent;
+    lines.push(`Week ${r.week} — Day ${r.day}`);
+    lines.push(`  "${r.flavor}"`);
+    lines.push(`  Donated       : ${r.donated}`);
+    lines.push(`  Requests      : ${r.requestsFulfilled}`);
+    lines.push(`  Sold          : ${r.itemsSold}`);
+    lines.push(`  Scrapped      : ${r.itemsScrapped}`);
+    lines.push(`  Repairs       : ${r.repairsSucceeded} succeeded / ${r.repairsFailed} failed / ${r.repairsJunked} junked`);
+    lines.push(`  Grants        : $${r.grantIncome}`);
+    lines.push(`  Hosting       : $${r.hostingIncome}`);
+    lines.push(`  Net Cash      : ${net >= 0 ? "+" : "-"}$${Math.abs(net)}`);
+    lines.push("");
+  }
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "caf-impact-history.txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function ReportHistoryModal({ reports, onClose }: { reports: WeeklyReport[]; onClose: () => void }) {
   return (
     <div className="modalOverlay" role="dialog" aria-modal="true" aria-label="Impact Report History">
       <section className="modalPanel reportHistory">
         <button className="modalClose" onClick={onClose}>Close</button>
+        <button className="modalClose" style={{ right: "7rem" }} onClick={() => exportImpactHistoryTxt(reports)}>Export TXT</button>
         <h2>[ IMPACT HISTORY ]</h2>
         {reports.length === 0 ? (
           <p className="emptyZone">No reports yet. Complete a full week first.</p>
