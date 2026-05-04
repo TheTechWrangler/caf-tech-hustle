@@ -283,12 +283,18 @@ export type WeeklyReport = {
   flavor: string;
 };
 
+export type LedgerTransaction = {
+  amount: number;
+  label: string;
+};
+
 export type DailyLedgerEntry = {
   day: number;
   startingCash: number;
   income: number;
   expenses: number;
   endingCash: number;
+  transactions?: LedgerTransaction[];
 };
 
 export type DistrictName = "Garage" | "Neighborhood" | "Downtown" | "Schools" | "Library" | "Senior Center" | "Industrial Park" | "Partner City";

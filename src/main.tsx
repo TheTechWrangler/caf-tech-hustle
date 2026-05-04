@@ -210,7 +210,7 @@ function ensureLedgerDay(state: Pick<GameState, "day" | "cash" | "ledger">): Dai
   return [...existing, ledgerEntryFor(state.day, state.cash)];
 }
 
-function withCashChange(state: GameState, delta: number): GameState {
+function withCashChange(state: GameState, delta: number, label?: string): GameState {
   if (delta === 0) {
     return {
       ...state,
@@ -221,11 +221,15 @@ function withCashChange(state: GameState, delta: number): GameState {
   const actualDelta = nextCash - state.cash;
   const ledger = ensureLedgerDay(state).map((entry) => {
     if (entry.day !== state.day) return entry;
+    const transactions = label
+      ? [...(entry.transactions ?? []), { amount: actualDelta, label }]
+      : entry.transactions;
     return {
       ...entry,
       income: entry.income + Math.max(0, actualDelta),
       expenses: entry.expenses + Math.max(0, -actualDelta),
-      endingCash: nextCash
+      endingCash: nextCash,
+      ...(transactions !== undefined ? { transactions } : {})
     };
   });
   return { ...state, cash: nextCash, ledger };
@@ -820,7 +824,7 @@ function processGrantDay(state: GameState): { state: GameState; messages: string
         const payout = grantPayout(definition);
         const message = approvedGrantMessage(definition);
         next = {
-          ...withCashChange(next, payout),
+          ...withCashChange(next, payout, `Grant: ${definition.name}`),
           reputation: next.reputation + (definition.id === "major-foundation" ? 5 : 2),
           communityTrust: next.communityTrust + (definition.id === "micro" ? 1 : 2),
           weeklyStats: {
@@ -1920,7 +1924,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, -offer.price),
+          ...withCashChange(state, -offer.price, `Purchase: ${offer.name}`),
           weeklyStats: { ...state.weeklyStats, cashSpent: state.weeklyStats.cashSpent + offer.price },
           inventory: [...state.inventory, item],
           shopInventories: {
@@ -1948,7 +1952,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, -5),
+          ...withCashChange(state, -5, "Scout Fee"),
           energy: state.energy - scoutEnergy,
           weeklyStats: { ...state.weeklyStats, cashSpent: state.weeklyStats.cashSpent + 5 },
           shopInventories: {
@@ -2030,7 +2034,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...(shouldScrap ? withCashChange(state, scrapValue(refreshPricingForItem({ ...item, status: "Scrapped", condition: "Broken" }, "Scrapped", "Broken"))) : state),
+          ...(shouldScrap ? withCashChange(state, scrapValue(refreshPricingForItem({ ...item, status: "Scrapped", condition: "Broken" }, "Scrapped", "Broken")), `Scrap: ${item.name}`) : state),
           energy: state.energy - testEnergy,
           inventory: state.inventory.map((stored) =>
             stored.id === item.id
@@ -2095,7 +2099,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, -cost.cash),
+          ...withCashChange(state, -cost.cash, `Repair: ${item.name}`),
           energy: state.energy - cost.energy,
           repairsToday: state.repairsToday + 1,
           stress: clampStat(state.stress + (success ? 0 : difficultyStress(state, junked ? 2 : 1)), 0, 20),
@@ -2129,7 +2133,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, Math.max(1, value)),
+          ...withCashChange(state, Math.max(1, value), `Sale: ${item.name}`),
           weeklyStats: { ...state.weeklyStats, itemsSold: state.weeklyStats.itemsSold + 1, cashEarned: state.weeklyStats.cashEarned + Math.max(1, value) },
           inventory: state.inventory.map((stored) => stored.id === item.id ? { ...stored, status: "Sold" as StorageStatus } : stored)
         },
@@ -2147,7 +2151,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, value),
+          ...withCashChange(state, value, `Business Sale: ${item.name}`),
           weeklyStats: { ...state.weeklyStats, itemsSold: state.weeklyStats.itemsSold + 1, cashEarned: state.weeklyStats.cashEarned + value },
           inventory: state.inventory.map((stored) => stored.id === item.id ? { ...stored, status: "Sold" as StorageStatus } : stored)
         },
@@ -2173,7 +2177,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, total),
+          ...withCashChange(state, total, `Bulk Lot: ${lot.label}`),
           weeklyStats: {
             ...state.weeklyStats,
             itemsSold: state.weeklyStats.itemsSold + eligible.length,
@@ -2207,7 +2211,7 @@ function App() {
         return pushLog(
           {
             ...state,
-            ...withCashChange(state, total),
+            ...withCashChange(state, total, `Bundle Cashout: ${lot.label}`),
             weeklyStats: {
               ...state.weeklyStats,
               itemsSold: state.weeklyStats.itemsSold + lotItems.length,
@@ -2280,7 +2284,7 @@ function App() {
         return pushLogs(
           {
             ...state,
-            ...withCashChange(state, request.cashDonation ?? 0),
+            ...withCashChange(state, request.cashDonation ?? 0, `Request Stipend: ${request.title}`),
             reputation: state.reputation + request.reputationReward,
             communityTrust: state.communityTrust + request.trustReward,
             completedRequests: state.completedRequests + 1,
@@ -2343,7 +2347,7 @@ function App() {
         };
         return pushLog(
           {
-            ...withCashChange(state, -project.setupCost),
+            ...withCashChange(state, -project.setupCost, `Hosting Setup: ${project.name}`),
             reputation: state.reputation + project.reputationReward + 2,
             communityTrust: state.communityTrust + 2,
             hostedServices: [...state.hostedServices, service],
@@ -2376,7 +2380,7 @@ function App() {
           return pushLog(
             {
               ...state,
-              ...withCashChange(state, total),
+              ...withCashChange(state, total, `Bundle Cashout: ${lot.label}`),
               weeklyStats: {
                 ...state.weeklyStats,
                 itemsSold: state.weeklyStats.itemsSold + lotItems.length,
@@ -2420,7 +2424,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, value),
+          ...withCashChange(state, value, `Scrap: ${item.name}`),
           weeklyStats: { ...state.weeklyStats, itemsScrapped: state.weeklyStats.itemsScrapped + 1, cashEarned: state.weeklyStats.cashEarned + value },
           inventory: state.inventory.map((stored) => stored.id === item.id ? refreshPricingForItem({ ...stored, status: "Scrapped" }, "Scrapped", stored.condition ?? conditionFromStatus(stored.status)) : stored)
         },
@@ -2454,7 +2458,7 @@ function App() {
         return pushLogs(
           {
             ...state,
-            ...withCashChange(state, request.cashDonation ?? 0),
+            ...withCashChange(state, request.cashDonation ?? 0, `Request Stipend: ${request.title}`),
             reputation: state.reputation + request.reputationReward,
             communityTrust: state.communityTrust + request.trustReward,
             completedRequests: state.completedRequests + 1,
@@ -2473,8 +2477,8 @@ function App() {
       const slots = hostingSlotsFor(request.need as ServiceNeed);
       let cashState = state;
       const requestEnergyCost = actionEnergyCost(request.energyCost ?? 0);
-      if (request.cashCost) cashState = withCashChange(cashState, -request.cashCost);
-      if (request.cashDonation) cashState = withCashChange(cashState, request.cashDonation);
+      if (request.cashCost) cashState = withCashChange(cashState, -request.cashCost, `Service Cost: ${request.title}`);
+      if (request.cashDonation) cashState = withCashChange(cashState, request.cashDonation, `Request Stipend: ${request.title}`);
       const hostedService: HostedService | null = slots > 0
         ? {
           id: id("hosted"),
@@ -2585,7 +2589,7 @@ function App() {
       const nextLevel = currentLevel + 1;
       const upgraded = {
           ...state,
-          ...withCashChange(state, -cost),
+          ...withCashChange(state, -cost, `Infrastructure Upgrade: ${facility.name}`),
           ownedInfrastructure: {
             ...state.ownedInfrastructure,
             [facility.name]: nextLevel
@@ -2665,7 +2669,7 @@ function App() {
       const nextLevel = currentLevel + 1;
       const upgraded = {
           ...state,
-          ...withCashChange(state, -cost),
+          ...withCashChange(state, -cost, `Lab Upgrade: ${stationName}`),
           labStations: {
             ...state.labStations,
             [stationName]: nextLevel
@@ -2699,7 +2703,7 @@ function App() {
       return pushLog(
         {
           ...state,
-          ...withCashChange(state, loan.amount),
+          ...withCashChange(state, loan.amount, `Loan Received: ${definition.type}`),
           creditScore: clampStat(state.creditScore - 2, 0, 100),
           loans: [...state.loans, loan]
         },
@@ -2738,7 +2742,7 @@ function App() {
       if (!availability.canComplete) return pushLog(state, `${project.name} is not ready: ${availability.missing}.`);
       const equipmentIds = availability.equipment.map((item) => item.id);
       const equipmentNames = availability.equipment.map((item) => item.name);
-      const next = withCashChange(state, -project.setupCost);
+      const next = withCashChange(state, -project.setupCost, `Hosting Setup: ${project.name}`);
       const completed = {
           ...next,
           reputation: next.reputation + project.reputationReward,
@@ -2843,7 +2847,7 @@ function App() {
 
       const event = roll(0, eventText.length - 1);
       if (event === 0) next = { ...next, reputation: next.reputation + 3 };
-      if (event === 1) next = withCashChange(next, -12);
+      if (event === 1) next = withCashChange(next, -12, "Random Event: Utility Bill");
       if (event === 2) next = { ...next, energy: clampStat(next.energy + 2, 0, energyStackCapFor(next)), stress: clampStat(next.stress - 1, 0, 20) };
       if (event === 3) {
         const cable = itemPool.find((item) => item.name === "Cable Bundle")!;
@@ -2864,7 +2868,7 @@ function App() {
         }
       }
       if (event === 4) next = { ...next, stress: clampStat(next.stress + difficultyStress(next, 2), 0, 20) };
-      if (event === 5) next = { ...withCashChange(next, Math.round(14 * difficultyConfig(next.difficulty).reward)), reputation: next.reputation + 2 };
+      if (event === 5) next = { ...withCashChange(next, Math.round(14 * difficultyConfig(next.difficulty).reward), "Random Event: Sponsor Day"), reputation: next.reputation + 2 };
 
       const entries = [`Day ${next.day}: ${eventText[event]}`, ...grantResults.messages];
       const stats = infrastructureStats(next.ownedInfrastructure, next.labStations);
@@ -2882,7 +2886,7 @@ function App() {
       const upkeepDue = Math.round(stats.upkeep * difficultyConfig(next.difficulty).upkeepCost);
       if (day % 7 === 0 && upkeepDue > 0) {
         if (next.cash >= upkeepDue) {
-          next = withCashChange(next, -upkeepDue);
+          next = withCashChange(next, -upkeepDue, "Infrastructure Upkeep");
           entries.push(`Paid infrastructure upkeep: $${upkeepDue}.`);
         } else {
           next = {
@@ -2903,7 +2907,7 @@ function App() {
           }
           const payment = Math.min(loan.payment, loan.remainingBalance);
           if (next.cash >= payment) {
-            next = { ...withCashChange(next, -payment), creditScore: clampStat(next.creditScore + 1, 0, 100) };
+            next = { ...withCashChange(next, -payment, `Loan Payment: ${loan.type}`), creditScore: clampStat(next.creditScore + 1, 0, 100) };
             const remainingBalance = loan.remainingBalance - payment;
             if (remainingBalance > 0) {
               processedLoans.push({ ...loan, remainingBalance, nextDueDay: nextLoanDueDay(day, loan.cadence) });
@@ -2952,7 +2956,7 @@ function App() {
         const activeProjects = completedHostingDefinitions(next).length;
         if (payout > 0) {
           next = {
-            ...withCashChange(next, payout),
+            ...withCashChange(next, payout, `Hosting Payout: ${activeProjects} project${activeProjects === 1 ? "" : "s"}`),
             weeklyStats: {
               ...next.weeklyStats,
               cashEarned: next.weeklyStats.cashEarned + payout,
@@ -4585,6 +4589,15 @@ function exportLedgerTxt(rows: (DailyLedgerEntry & { endingCash: number })[]) {
     const net = entry.income - entry.expenses;
     lines.push(`Day ${entry.day}`);
     lines.push(`  Starting Cash : $${entry.startingCash}`);
+    if (entry.transactions && entry.transactions.length > 0) {
+      lines.push("");
+      lines.push("  Transactions:");
+      for (const tx of entry.transactions) {
+        const sign = tx.amount >= 0 ? "+" : "-";
+        lines.push(`    ${sign}$${Math.abs(tx.amount).toString().padEnd(8)} ${tx.label}`);
+      }
+      lines.push("");
+    }
     lines.push(`  Income        : +$${entry.income}`);
     lines.push(`  Expenses      : -$${entry.expenses}`);
     lines.push(`  Net           : ${net >= 0 ? "+" : "-"}$${Math.abs(net)}`);
