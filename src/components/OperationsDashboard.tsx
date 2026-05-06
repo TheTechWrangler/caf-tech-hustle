@@ -1,4 +1,5 @@
 import type { GameState, InventoryItem, LabStationName, InfrastructureDefinition, HostingProjectDefinition } from "../types";
+import "./OperationsDashboard.css";
 import { infrastructureStats, conditionFromStatus, isInactiveStatus, labProgress, hostingWeeklyPayout } from "../utils";
 import {
   itemOperationTags, demandMatchesItem,
