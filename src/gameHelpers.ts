@@ -1,7 +1,7 @@
-import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality, InfrastructureDefinition, LabStationName, ItemType, DailyUpdateData, DailyUpdateLine } from "./types";
-import { HOSTING_WEEKLY_PAYOUT_FACTOR } from "./constants";
-import { hostingProjectCatalog, grantCatalog, districtNames } from "./data";
-import { infrastructureStats, infrastructureProgress, progressMeets, conditionFromStatus, conditionMultiplier, isInactiveStatus, isReadyStatus, hostingSlotsUsed, labProgress, stableRatio, buyPriceHeat } from "./utils";
+import type { GameState, HostingProject, ItemTemplate, ItemCondition, StorageStatus, InventoryItem, Offer, HostingProjectDefinition, GrantId, GrantApplication, DistrictConfig, PricingSnapshot, ItemQuality, InfrastructureDefinition, LabStationName, ItemType, LocationName, Difficulty, RevealedDonationCondition, DailyUpdateData, DailyUpdateLine } from "./types";
+import { HOSTING_WEEKLY_PAYOUT_FACTOR, shopLocations } from "./constants";
+import { itemPool, hostingProjectCatalog, grantCatalog, districtNames } from "./data";
+import { infrastructureStats, infrastructureProgress, progressMeets, conditionFromStatus, conditionMultiplier, isInactiveStatus, isReadyStatus, hostingSlotsUsed, labProgress, stableRatio, buyPriceHeat, rollFloat, roll, id, clampStat, pickWeighted, difficultyConfig } from "./utils";
 
 export function baseResaleValue(item: Pick<ItemTemplate, "name" | "type">, condition: ItemCondition = "Working") {
   if (item.type === "Cables") return 8;
@@ -430,4 +430,157 @@ export function buildDailyUpdate(prev: GameState, next: GameState, unpaidOperati
   const newWeeklyReport = next.weeklyReport !== null && prev.weeklyReport === null;
 
   return { day: next.day, netCash, lines, newWeeklyReport, newDistricts, unpaidOperatingCosts: unpaidOperatingCosts > 0 ? unpaidOperatingCosts : undefined };
+}
+
+// ─── Shop generation helpers (moved from main.tsx for shared use) ─────────────
+
+export function itemConditionToStatus(_condition: ItemCondition): StorageStatus {
+  return "Incoming";
+}
+
+export function conditionForLocation(location: LocationName): ItemCondition {
+  const chance = Math.random();
+  if (location === "Marketplace") {
+    if (chance < 0.55) return "Refurbished";
+    if (chance < 0.95) return "Working";
+    if (chance < 0.98) return "Needs Parts";
+    return "Broken";
+  }
+  if (location === "Office Liquidator") {
+    if (chance < 0.46) return "Working";
+    if (chance < 0.74) return "Refurbished";
+    if (chance < 0.88) return "Unknown";
+    if (chance < 0.97) return "Needs Parts";
+    return "Broken";
+  }
+  if (location === "University Surplus") {
+    if (chance < 0.28) return "Working";
+    if (chance < 0.48) return "Needs Parts";
+    if (chance < 0.78) return "Unknown";
+    if (chance < 0.94) return "Broken";
+    return "Refurbished";
+  }
+  if (location === "Recycling Center") {
+    if (chance < 0.5) return "Broken";
+    if (chance < 0.76) return "Needs Parts";
+    if (chance < 0.95) return "Unknown";
+    return "Working";
+  }
+  if (chance < 0.24) return "Broken";
+  if (chance < 0.48) return "Needs Parts";
+  if (chance < 0.72) return "Unknown";
+  if (chance < 0.96) return "Working";
+  return "Refurbished";
+}
+
+export function hiddenConditionForInventory(condition: ItemCondition | undefined, source?: string): RevealedDonationCondition | undefined {
+  if (condition !== "Unknown") return undefined;
+  const sourceLabel = source?.toLowerCase() ?? "";
+  if (sourceLabel.includes("marketplace") || sourceLabel.includes("liquidator")) {
+    return pickWeighted<RevealedDonationCondition>([
+      { value: "Working", weight: 62 },
+      { value: "Needs Parts", weight: 26 },
+      { value: "Broken", weight: 12 }
+    ]);
+  }
+  if (sourceLabel.includes("recycling")) {
+    return pickWeighted<RevealedDonationCondition>([
+      { value: "Working", weight: 16 },
+      { value: "Needs Parts", weight: 38 },
+      { value: "Broken", weight: 46 }
+    ]);
+  }
+  return pickWeighted<RevealedDonationCondition>([
+    { value: "Working", weight: 34 },
+    { value: "Needs Parts", weight: 34 },
+    { value: "Broken", weight: 32 }
+  ]);
+}
+
+function priceFactorForLocation(location: LocationName) {
+  const chance = Math.random();
+  if (location === "Thrift Store") {
+    if (chance < 0.1) return rollFloat(0.42, 0.55);
+    if (chance < 0.72) return rollFloat(0.55, 0.95);
+    if (chance < 0.9) return rollFloat(0.96, 1.1);
+    return rollFloat(1.1, 1.25);
+  }
+  if (location === "Recycling Center") {
+    if (chance < 0.12) return rollFloat(0.2, 0.38);
+    if (chance < 0.78) return rollFloat(0.56, 0.75);
+    if (chance < 0.94) return rollFloat(0.76, 1.05);
+    return rollFloat(1.06, 1.22);
+  }
+  if (location === "Marketplace") {
+    if (chance < 0.08) return rollFloat(0.7, 0.85);
+    if (chance < 0.78) return rollFloat(0.85, 1.2);
+    if (chance < 0.92) return rollFloat(0.95, 1.1);
+    return rollFloat(1.25, 1.45);
+  }
+  if (location === "Office Liquidator") {
+    if (chance < 0.07) return rollFloat(0.5, 0.65);
+    if (chance < 0.4) return rollFloat(0.66, 0.85);
+    if (chance < 0.82) return rollFloat(0.86, 1.12);
+    if (chance < 0.96) return rollFloat(1.13, 1.28);
+    return rollFloat(1.29, 1.42);
+  }
+  if (location === "University Surplus") {
+    if (chance < 0.1) return rollFloat(0.35, 0.55);
+    if (chance < 0.5) return rollFloat(0.56, 0.82);
+    if (chance < 0.85) return rollFloat(0.83, 1.1);
+    if (chance < 0.97) return rollFloat(1.11, 1.28);
+    return rollFloat(1.29, 1.4);
+  }
+  return 1;
+}
+
+function itemPoolForLocation(location: LocationName) {
+  if (location === "Office Liquidator") {
+    return itemPool.filter((item) => ["Desktop", "Display", "Network", "Workstation", "Mini PC", "Cables"].includes(item.type));
+  }
+  if (location === "University Surplus") {
+    return itemPool.filter((item) => ["Server", "Network", "Desktop", "Display", "Storage", "Memory", "Cables"].includes(item.type));
+  }
+  return itemPool;
+}
+
+export function marketFor(location: LocationName, difficulty: Difficulty = "Normal"): Offer[] {
+  if (location === "Business Sales" || location === "Bulk Buyers") return [];
+  const count = location === "Marketplace" || location === "Office Liquidator" || location === "University Surplus" ? 5 : 4;
+  const pool = itemPoolForLocation(location);
+  return Array.from({ length: count }, () => {
+    const template = pool[roll(0, pool.length - 1)];
+    const config = difficultyConfig(difficulty);
+    const condition = conditionForLocation(location);
+    const status = itemConditionToStatus(condition);
+    const fair = fairMarketValue(template, status, condition);
+    const difficultyPrice = location === "Marketplace" ? config.marketplacePrice : config.otherMarketPrice;
+    const locationFactor = priceFactorForLocation(location);
+    const cappedFactor = location === "Marketplace"
+      ? clampStat(locationFactor * difficultyPrice, 0.65, 1.5)
+      : location === "Recycling Center"
+        ? clampStat(locationFactor * difficultyPrice, 0.18, 1.42)
+        : location === "University Surplus"
+          ? clampStat(locationFactor * difficultyPrice, 0.3, 1.4)
+          : clampStat(locationFactor * difficultyPrice, 0.35, 1.42);
+    const price = Math.max(1, Math.round(fair * cappedFactor));
+    const pricing = pricingSnapshot(template, status, condition, price);
+    return {
+      ...template,
+      id: id("offer"),
+      location,
+      price,
+      status,
+      condition,
+      hiddenCondition: hiddenConditionForInventory(condition, location),
+      pricing
+    };
+  });
+}
+
+export function createShopInventories(difficulty: Difficulty): Partial<Record<LocationName, Offer[]>> {
+  return shopLocations.reduce<Partial<Record<LocationName, Offer[]>>>((shops, location) => {
+    shops[location] = marketFor(location, difficulty);
+    return shops;
+  }, {});
 }

@@ -87,7 +87,8 @@ import {
   baseFairValue, scrapValue, pricingSnapshot,
   isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem,
   processedItemCount, assignedTypeCount, unmetInfrastructureRequirements,
-  buildDailyUpdate, calculateOperatingCosts
+  buildDailyUpdate, calculateOperatingCosts,
+  conditionForLocation, hiddenConditionForInventory, marketFor, createShopInventories
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -96,6 +97,20 @@ import {
   normalizeOperationsSizes, normalizeOperationsLayout,
   readOperationsLayout, writeOperationsLayout
 } from "./storage";
+import {
+  isLocation, isServiceNeed, isHostingProjectStatus, isDonationTier,
+  isDonationCondition, isItemCondition, isItemQuality, isInfrastructureName,
+  isDifficulty, isLoanType, isLoanCadence, isRevealedDonationCondition, isStorageStatus,
+  emptyWeeklyStats, freshHostingProjects, emptyDistrictProgress, startingDistricts,
+  generateWeeklyRequests,
+  normalizeStatus, normalizeInventory, normalizeOffers, normalizeShopInventories,
+  normalizeShopRefreshes, normalizeRequests, normalizePendingDonation,
+  normalizeInfrastructure, normalizeLabStations, normalizeLabAssignments,
+  normalizeHostedServices, normalizeHostingProjects, normalizeLoans,
+  normalizeLedger, normalizeGrants,
+  reconcileLabInfraProgress, normalizeGame, normalizeSaveSlots,
+  readSaveSlots, readDailyAutosave
+} from "./gameStatePersistence";
 import { Stat } from "./components/Stat";
 import { MilestoneList } from "./components/MilestoneList";
 import { ShopForPanel } from "./components/ShopForPanel";
@@ -170,33 +185,6 @@ function chaosSwing(difficulty: Difficulty, low: number, high: number) {
 
 
 
-function emptyWeeklyStats(): WeeklyStats {
-  return {
-    donated: 0,
-    requestsFulfilled: 0,
-    itemsSold: 0,
-    itemsScrapped: 0,
-    itemsAssignedToLab: 0,
-    repairsSucceeded: 0,
-    repairsFailed: 0,
-    repairsJunked: 0,
-    grantsApplied: 0,
-    grantsApproved: 0,
-    grantsRejected: 0,
-    grantIncome: 0,
-    hostingIncome: 0,
-    cashEarned: 0,
-    cashSpent: 0
-  };
-}
-
-function freshHostingProjects(): HostingProject[] {
-  return hostingProjectCatalog.map((project) => ({
-    id: project.id,
-    status: "Inactive"
-  }));
-}
-
 function ledgerEntryFor(day: number, startingCash: number): DailyLedgerEntry {
   return {
     day,
@@ -248,15 +236,6 @@ function startLedgerDay(state: GameState, day: number): GameState {
     ledger: [...ledger, ledgerEntryFor(day, state.cash)].slice(-60)
   };
 }
-
-function emptyDistrictProgress(): Record<DistrictName, number> {
-  return Object.fromEntries(districtNames.map((n) => [n, 0])) as Record<DistrictName, number>;
-}
-
-function startingDistricts(): DistrictName[] {
-  return districtCatalog.filter((d) => !d.startLocked).map((d) => d.name);
-}
-
 
 function checkDistrictUnlocks(state: GameState, prog: number): { newDistricts: DistrictName[]; messages: string[] } {
   const newDistricts: DistrictName[] = [];
@@ -338,9 +317,6 @@ function donationConditionToStatus(condition: DonationCondition): StorageStatus 
   return condition === "Unknown" ? "Incoming" : "Needs Cleaning";
 }
 
-function itemConditionToStatus(_condition: ItemCondition): StorageStatus {
-  return "Incoming";
-}
 
 
 function itemQuality(item: InventoryItem): ItemQuality {
@@ -466,31 +442,6 @@ function activeItemCount(inventory: InventoryItem[]) {
 function intakeBacklogCount(inventory: InventoryItem[]) {
   return inventory.filter((item) => intakeBacklogStatuses.includes(item.status)).length;
 }
-
-function hiddenConditionForInventory(condition: ItemCondition | undefined, source?: string): RevealedDonationCondition | undefined {
-  if (condition !== "Unknown") return undefined;
-  const sourceLabel = source?.toLowerCase() ?? "";
-  if (sourceLabel.includes("marketplace") || sourceLabel.includes("liquidator")) {
-    return pickWeighted<RevealedDonationCondition>([
-      { value: "Working", weight: 62 },
-      { value: "Needs Parts", weight: 26 },
-      { value: "Broken", weight: 12 }
-    ]);
-  }
-  if (sourceLabel.includes("recycling")) {
-    return pickWeighted<RevealedDonationCondition>([
-      { value: "Working", weight: 16 },
-      { value: "Needs Parts", weight: 38 },
-      { value: "Broken", weight: 46 }
-    ]);
-  }
-  return pickWeighted<RevealedDonationCondition>([
-    { value: "Working", weight: 34 },
-    { value: "Needs Parts", weight: 34 },
-    { value: "Broken", weight: 32 }
-  ]);
-}
-
 
 
 function labStationDefinition(name: LabStationName) {
@@ -861,150 +812,6 @@ function processGrantDay(state: GameState): { state: GameState; messages: string
   return { state: { ...next, grants }, messages };
 }
 
-function generateWeeklyRequests(_week: number, difficulty: Difficulty, unlockedDistricts?: DistrictName[]): CommunityRequest[] {
-  const config = difficultyConfig(difficulty);
-  const eligible = unlockedDistricts
-    ? requestTemplates.filter((t) => !t.district || unlockedDistricts.includes(t.district))
-    : requestTemplates;
-  return shuffle(eligible)
-    .slice(0, roll(2, 4))
-    .map((template) => {
-      const deadline = roll(template.deadline[0], template.deadline[1]) + config.deadlineDays + chaosSwing(difficulty, -2, 2);
-      return {
-        ...template,
-        id: id("req"),
-        deadline: Math.max(2, deadline),
-        reputationReward: Math.round(roll(template.reputationReward[0], template.reputationReward[1]) * config.reward),
-        trustReward: Math.max(1, Math.round(roll(template.trustReward[0], template.trustReward[1]) * config.reward)),
-        cashDonation: template.cashDonation && Math.random() > 0.55
-          ? Math.round(roll(template.cashDonation[0], template.cashDonation[1]) * config.reward * 0.72)
-          : undefined
-      };
-    });
-}
-
-function priceFactorForLocation(location: LocationName) {
-  const chance = Math.random();
-  if (location === "Thrift Store") {
-    if (chance < 0.1) return rollFloat(0.42, 0.55);
-    if (chance < 0.72) return rollFloat(0.55, 0.95);
-    if (chance < 0.9) return rollFloat(0.96, 1.1);
-    return rollFloat(1.1, 1.25);
-  }
-  if (location === "Recycling Center") {
-    if (chance < 0.12) return rollFloat(0.2, 0.38);
-    if (chance < 0.78) return rollFloat(0.56, 0.75);
-    if (chance < 0.94) return rollFloat(0.76, 1.05);
-    return rollFloat(1.06, 1.22);
-  }
-  if (location === "Marketplace") {
-    if (chance < 0.08) return rollFloat(0.7, 0.85);
-    if (chance < 0.78) return rollFloat(0.85, 1.2);
-    if (chance < 0.92) return rollFloat(0.95, 1.1);
-    return rollFloat(1.25, 1.45);
-  }
-  if (location === "Office Liquidator") {
-    if (chance < 0.07) return rollFloat(0.5, 0.65);
-    if (chance < 0.4) return rollFloat(0.66, 0.85);
-    if (chance < 0.82) return rollFloat(0.86, 1.12);
-    if (chance < 0.96) return rollFloat(1.13, 1.28);
-    return rollFloat(1.29, 1.42);
-  }
-  if (location === "University Surplus") {
-    if (chance < 0.1) return rollFloat(0.35, 0.55);
-    if (chance < 0.5) return rollFloat(0.56, 0.82);
-    if (chance < 0.85) return rollFloat(0.83, 1.1);
-    if (chance < 0.97) return rollFloat(1.11, 1.28);
-    return rollFloat(1.29, 1.4);
-  }
-  return 1;
-}
-
-function conditionForLocation(location: LocationName): ItemCondition {
-  const chance = Math.random();
-  if (location === "Marketplace") {
-    if (chance < 0.55) return "Refurbished";
-    if (chance < 0.95) return "Working";
-    if (chance < 0.98) return "Needs Parts";
-    return "Broken";
-  }
-  if (location === "Office Liquidator") {
-    if (chance < 0.46) return "Working";
-    if (chance < 0.74) return "Refurbished";
-    if (chance < 0.88) return "Unknown";
-    if (chance < 0.97) return "Needs Parts";
-    return "Broken";
-  }
-  if (location === "University Surplus") {
-    if (chance < 0.28) return "Working";
-    if (chance < 0.48) return "Needs Parts";
-    if (chance < 0.78) return "Unknown";
-    if (chance < 0.94) return "Broken";
-    return "Refurbished";
-  }
-  if (location === "Recycling Center") {
-    if (chance < 0.5) return "Broken";
-    if (chance < 0.76) return "Needs Parts";
-    if (chance < 0.95) return "Unknown";
-    return "Working";
-  }
-  if (chance < 0.24) return "Broken";
-  if (chance < 0.48) return "Needs Parts";
-  if (chance < 0.72) return "Unknown";
-  if (chance < 0.96) return "Working";
-  return "Refurbished";
-}
-
-function itemPoolForLocation(location: LocationName) {
-  if (location === "Office Liquidator") {
-    return itemPool.filter((item) => ["Desktop", "Display", "Network", "Workstation", "Mini PC", "Cables"].includes(item.type));
-  }
-  if (location === "University Surplus") {
-    return itemPool.filter((item) => ["Server", "Network", "Desktop", "Display", "Storage", "Memory", "Cables"].includes(item.type));
-  }
-  return itemPool;
-}
-
-function marketFor(location: LocationName, difficulty: Difficulty = "Normal"): Offer[] {
-  if (location === "Business Sales" || location === "Bulk Buyers") return [];
-  const count = location === "Marketplace" || location === "Office Liquidator" || location === "University Surplus" ? 5 : 4;
-  const pool = itemPoolForLocation(location);
-  return Array.from({ length: count }, () => {
-    const template = pool[roll(0, pool.length - 1)];
-    const config = difficultyConfig(difficulty);
-    const condition = conditionForLocation(location);
-    const status = itemConditionToStatus(condition);
-    const fair = fairMarketValue(template, status, condition);
-    const difficultyPrice = location === "Marketplace" ? config.marketplacePrice : config.otherMarketPrice;
-    const locationFactor = priceFactorForLocation(location);
-    const cappedFactor = location === "Marketplace"
-      ? clampStat(locationFactor * difficultyPrice, 0.65, 1.5)
-      : location === "Recycling Center"
-        ? clampStat(locationFactor * difficultyPrice, 0.18, 1.42)
-        : location === "University Surplus"
-          ? clampStat(locationFactor * difficultyPrice, 0.3, 1.4)
-          : clampStat(locationFactor * difficultyPrice, 0.35, 1.42);
-    const price = Math.max(1, Math.round(fair * cappedFactor));
-    const pricing = pricingSnapshot(template, status, condition, price);
-    return {
-      ...template,
-      id: id("offer"),
-      location,
-      price,
-      status,
-      condition,
-      hiddenCondition: hiddenConditionForInventory(condition, location),
-      pricing
-    };
-  });
-}
-
-function createShopInventories(difficulty: Difficulty): Partial<Record<LocationName, Offer[]>> {
-  return shopLocations.reduce<Partial<Record<LocationName, Offer[]>>>((shops, location) => {
-    shops[location] = marketFor(location, difficulty);
-    return shops;
-  }, {});
-}
 
 function offersForLocation(state: Pick<GameState, "location" | "shopInventories">, location = state.location) {
   return state.shopInventories[location] ?? [];
@@ -1055,471 +862,6 @@ function newGame(difficulty: Difficulty = "Normal"): GameState {
     districtProgress: emptyDistrictProgress(),
     dataCenterUnlocked: false
   };
-}
-
-function isLocation(value: unknown): value is LocationName {
-  return typeof value === "string" && locations.includes(value as LocationName);
-}
-
-
-function isServiceNeed(value: unknown): value is ServiceNeed {
-  return typeof value === "string" && serviceNeeds.includes(value as ServiceNeed);
-}
-
-function isHostingProjectStatus(value: unknown): value is HostingProjectStatus {
-  return typeof value === "string" && hostingProjectStatuses.includes(value as HostingProjectStatus);
-}
-
-function isDonationTier(value: unknown): value is DonationTier {
-  return typeof value === "string" && donationTiers.includes(value as DonationTier);
-}
-
-function isDonationCondition(value: unknown): value is DonationCondition {
-  return typeof value === "string" && donationConditions.includes(value as DonationCondition);
-}
-
-function isItemCondition(value: unknown): value is ItemCondition {
-  return typeof value === "string" && itemConditions.includes(value as ItemCondition);
-}
-
-function isItemQuality(value: unknown): value is ItemQuality {
-  return typeof value === "string" && itemQualities.includes(value as ItemQuality);
-}
-
-function isInfrastructureName(value: unknown): value is InfrastructureName {
-  return typeof value === "string" && infrastructureNames.includes(value as InfrastructureName);
-}
-
-function isDifficulty(value: unknown): value is Difficulty {
-  return typeof value === "string" && difficulties.includes(value as Difficulty);
-}
-
-function isLoanType(value: unknown): value is LoanType {
-  return typeof value === "string" && loanCatalog.some((loan) => loan.type === value);
-}
-
-function isLoanCadence(value: unknown): value is LoanCadence {
-  return value === "Weekly" || value === "Monthly";
-}
-
-function isRevealedDonationCondition(value: unknown): value is RevealedDonationCondition {
-  return typeof value === "string" && revealedDonationConditions.includes(value as RevealedDonationCondition);
-}
-
-function isStorageStatus(value: unknown): value is StorageStatus {
-  return typeof value === "string" && storageStatuses.includes(value as StorageStatus);
-}
-
-function normalizeStatus(value: unknown): StorageStatus {
-  if (isStorageStatus(value)) return value;
-  if (value === "Broken" || value === "Needs Parts") return "Needs Repair";
-  if (value === "Deployed") return "Deployed to Community";
-  if (value === "fixed") return "Ready to Sell";
-  if (value === "parts") return "Ready to Sell";
-  return "Incoming";
-}
-
-function normalizeInventory(value: unknown): InventoryItem[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).map((raw) => {
-    const template = itemPool.find((item) => item.name === raw.name) ?? itemPool[0];
-    const status = normalizeStatus(raw.status ?? raw.kind);
-    const condition = isItemCondition(raw.condition) ? raw.condition : undefined;
-    const buyPrice = asNumber(raw.buyPrice, 0);
-    const item: InventoryItem = {
-      ...template,
-      id: typeof raw.id === "string" ? raw.id : id("item"),
-      status,
-      buyPrice,
-      source: typeof raw.source === "string" ? raw.source : undefined,
-      condition,
-      quality: isItemQuality(raw.quality) ? raw.quality : undefined,
-      hiddenCondition: isRevealedDonationCondition(raw.hiddenCondition) ? raw.hiddenCondition : undefined
-    };
-    return raw.pricing && isRecord(raw.pricing)
-      ? {
-        ...item,
-        pricing: {
-          baseFairValue: asNumber(raw.pricing.baseFairValue, baseFairValue(template, condition ?? conditionFromStatus(status))),
-          adjustedFairValue: asNumber(raw.pricing.adjustedFairValue, fairMarketValue(template, status, condition)),
-          buyPrice: asNumber(raw.pricing.buyPrice, buyPrice),
-          expectedResaleValue: asNumber(raw.pricing.expectedResaleValue, expectedResaleValue(template, status, condition)),
-          dealLabel: typeof raw.pricing.dealLabel === "string" ? raw.pricing.dealLabel : buyPriceHeat(buyPrice, fairMarketValue(template, status, condition)).label,
-          dealClassName: typeof raw.pricing.dealClassName === "string" ? raw.pricing.dealClassName : buyPriceHeat(buyPrice, fairMarketValue(template, status, condition)).className,
-          pricedStatus: isStorageStatus(raw.pricing.pricedStatus) ? raw.pricing.pricedStatus : status,
-          pricedCondition: isItemCondition(raw.pricing.pricedCondition) ? raw.pricing.pricedCondition : condition ?? conditionFromStatus(status)
-        }
-      }
-      : refreshPricingForItem(item);
-  });
-}
-
-function normalizeOffers(value: unknown, location: LocationName, difficulty: Difficulty): Offer[] {
-  if (!Array.isArray(value)) return marketFor(location, difficulty);
-  return value.filter(isRecord).map((raw) => {
-    const template = itemPool.find((item) => item.name === raw.name) ?? itemPool[0];
-    const condition = isItemCondition(raw.condition) ? raw.condition : conditionForLocation(location);
-    const status = normalizeStatus(raw.status);
-    const price = Math.max(1, Math.round(asNumber(raw.price, fairMarketValue(template, status, condition))));
-    return {
-      ...template,
-      id: typeof raw.id === "string" ? raw.id : id("offer"),
-      location,
-      price,
-      status,
-      condition,
-      hiddenCondition: isRevealedDonationCondition(raw.hiddenCondition) ? raw.hiddenCondition : hiddenConditionForInventory(condition, location),
-      pricing: raw.pricing && isRecord(raw.pricing)
-        ? {
-          baseFairValue: asNumber(raw.pricing.baseFairValue, baseFairValue(template, condition)),
-          adjustedFairValue: asNumber(raw.pricing.adjustedFairValue, fairMarketValue(template, status, condition)),
-          buyPrice: asNumber(raw.pricing.buyPrice, price),
-          expectedResaleValue: asNumber(raw.pricing.expectedResaleValue, expectedResaleValue(template, status, condition)),
-          dealLabel: typeof raw.pricing.dealLabel === "string" ? raw.pricing.dealLabel : buyPriceHeat(price, fairMarketValue(template, status, condition)).label,
-          dealClassName: typeof raw.pricing.dealClassName === "string" ? raw.pricing.dealClassName : buyPriceHeat(price, fairMarketValue(template, status, condition)).className,
-          pricedStatus: isStorageStatus(raw.pricing.pricedStatus) ? raw.pricing.pricedStatus : status,
-          pricedCondition: isItemCondition(raw.pricing.pricedCondition) ? raw.pricing.pricedCondition : condition
-        }
-        : pricingSnapshot(template, status, condition, price)
-    };
-  });
-}
-
-function normalizeShopInventories(value: unknown, difficulty: Difficulty): Partial<Record<LocationName, Offer[]>> {
-  const fallback = createShopInventories(difficulty);
-  if (!isRecord(value)) return fallback;
-  return shopLocations.reduce<Partial<Record<LocationName, Offer[]>>>((shops, location) => {
-    shops[location] = normalizeOffers(value[location], location, difficulty);
-    return shops;
-  }, {});
-}
-
-function normalizeShopRefreshes(value: unknown): Partial<Record<LocationName, number>> {
-  if (!isRecord(value)) return {};
-  return shopLocations.reduce<Partial<Record<LocationName, number>>>((refreshes, location) => {
-    const raw = value[location];
-    if (typeof raw === "number") refreshes[location] = Math.max(0, Math.floor(raw));
-    return refreshes;
-  }, {});
-}
-
-function normalizeRequests(value: unknown): CommunityRequest[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).flatMap((raw) => {
-    const need = raw.need;
-    const kind = raw.kind === "service" || isServiceNeed(need) ? "service" : "item";
-    if (kind === "item" && !isItemType(need)) return [];
-    if (kind === "service" && !isServiceNeed(need)) return [];
-    return [{
-      id: typeof raw.id === "string" ? raw.id : id("req"),
-      title: typeof raw.title === "string" ? raw.title : "Community Request",
-      description: typeof raw.description === "string" ? raw.description : "Someone in the community needs tech help.",
-      kind,
-      need: need as RequestNeed,
-      deadline: asNumber(raw.deadline, 5),
-      reputationReward: asNumber(raw.reputationReward, 6),
-      trustReward: asNumber(raw.trustReward, 3),
-      cashDonation: typeof raw.cashDonation === "number" ? raw.cashDonation : undefined,
-      energyCost: typeof raw.energyCost === "number" ? raw.energyCost : undefined,
-      cashCost: typeof raw.cashCost === "number" ? raw.cashCost : undefined,
-      district: districtNames.includes(raw.district as DistrictName) ? raw.district as DistrictName : undefined
-    }];
-  });
-}
-
-function normalizePendingDonation(value: unknown): SurpriseDonation | null {
-  if (!isRecord(value) || !Array.isArray(value.items)) return null;
-  const tier = isDonationTier(value.tier) ? value.tier : "Small";
-  const items = value.items.filter(isRecord).map((raw) => {
-    const template = itemPool.find((item) => item.name === raw.name) ?? itemPool[0];
-    const condition = isDonationCondition(raw.condition) ? raw.condition : "Unknown";
-    const hiddenCondition = isRevealedDonationCondition(raw.hiddenCondition)
-      ? raw.hiddenCondition
-      : hiddenConditionFor(condition, tier);
-    return {
-      ...template,
-      id: typeof raw.id === "string" ? raw.id : id("donation-item"),
-      condition,
-      hiddenCondition
-    };
-  });
-  if (!items.length) return null;
-  return {
-    id: typeof value.id === "string" ? value.id : id("donation"),
-    donor: typeof value.donor === "string" ? value.donor : "Mystery donor",
-    tier,
-    flavor: typeof value.flavor === "string" ? value.flavor : "A surprise donation is waiting to be sorted.",
-    sorted: Boolean(value.sorted),
-    items
-  };
-}
-
-function normalizeInfrastructure(value: unknown): Record<InfrastructureName, number> {
-  const owned = emptyInfrastructure();
-  if (!isRecord(value)) return owned;
-  Object.entries(value).forEach(([name, level]) => {
-    if (!isInfrastructureName(name)) return;
-    const facility = infrastructureCatalog.find((entry) => entry.name === name);
-    if (!facility) return;
-    owned[name] = clampStat(Math.floor(asNumber(level, 0)), 0, facility.maxLevel);
-  });
-  return owned;
-}
-
-function normalizeLabStations(value: unknown): Record<LabStationName, number> {
-  const stations = emptyLabStations();
-  if (!isRecord(value)) return stations;
-  Object.entries(value).forEach(([name, level]) => {
-    if (!labStationNames.includes(name as LabStationName)) return;
-    const station = labStationDefinition(name as LabStationName);
-    stations[name as LabStationName] = clampStat(Math.floor(asNumber(level, 0)), 0, station.maxLevel);
-  });
-  return stations;
-}
-
-function normalizeLabAssignments(value: unknown): LabAssignment[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).flatMap((raw) => {
-    if (!labStationNames.includes(raw.station as LabStationName)) return [];
-    const source = raw.source === "Storage" || raw.source === "Purchased" ? raw.source : "Purchased";
-    return [{
-      id: typeof raw.id === "string" ? raw.id : id("lab"),
-      station: raw.station as LabStationName,
-      itemName: typeof raw.itemName === "string" ? raw.itemName : "Lab equipment",
-      itemType: isItemType(raw.itemType) ? raw.itemType : undefined,
-      itemId: typeof raw.itemId === "string" ? raw.itemId : undefined,
-      source
-    }];
-  });
-}
-
-function normalizeHostedServices(value: unknown): HostedService[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).flatMap((raw) => {
-    if (!isServiceNeed(raw.need)) return [];
-    const slots = Math.max(0, Math.floor(asNumber(raw.slots, hostingSlotsFor(raw.need))));
-    if (slots <= 0) return [];
-    return [{
-      id: typeof raw.id === "string" ? raw.id : id("hosted"),
-      title: typeof raw.title === "string" ? raw.title : raw.need,
-      need: raw.need,
-      slots,
-      uptime: clampStat(asNumber(raw.uptime, 99), 55, 100),
-      projectId: typeof raw.projectId === "string" ? raw.projectId : undefined
-    }];
-  });
-}
-
-function normalizeHostingProjects(value: unknown): HostingProject[] {
-  const saved = Array.isArray(value) ? value.filter(isRecord) : [];
-  return hostingProjectCatalog.map((definition) => {
-    const found = saved.find((entry) => entry.id === definition.id);
-    return {
-      id: definition.id,
-      status: isHostingProjectStatus(found?.status) ? found.status : "Inactive",
-      startedDay: typeof found?.startedDay === "number" ? Math.max(1, Math.floor(found.startedDay)) : undefined,
-      equipmentIds: Array.isArray(found?.equipmentIds) ? found.equipmentIds.filter((entry): entry is string => typeof entry === "string") : undefined,
-      equipmentNames: Array.isArray(found?.equipmentNames) ? found.equipmentNames.filter((entry): entry is string => typeof entry === "string") : undefined
-    };
-  });
-}
-
-function normalizeLoans(value: unknown): Loan[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRecord).flatMap((raw) => {
-    if (!isLoanType(raw.type)) return [];
-    return [{
-      id: typeof raw.id === "string" ? raw.id : id("loan"),
-      type: raw.type,
-      amount: Math.max(0, Math.round(asNumber(raw.amount, 0))),
-      interestRate: Math.max(0, asNumber(raw.interestRate, 0.1)),
-      payment: Math.max(1, Math.round(asNumber(raw.payment, 20))),
-      cadence: isLoanCadence(raw.cadence) ? raw.cadence : "Weekly",
-      remainingBalance: Math.max(0, Math.round(asNumber(raw.remainingBalance, 0))),
-      nextDueDay: Math.max(2, Math.round(asNumber(raw.nextDueDay, 7))),
-      missedPayments: Math.max(0, Math.round(asNumber(raw.missedPayments, 0)))
-    }];
-  }).filter((loan) => loan.remainingBalance > 0);
-}
-
-function normalizeLedger(value: unknown, currentDay: number, cash: number): DailyLedgerEntry[] {
-  if (!Array.isArray(value)) return [ledgerEntryFor(currentDay, cash)];
-  const entries = value.filter(isRecord).flatMap((raw) => {
-    const day = Math.max(1, Math.floor(asNumber(raw.day, 0)));
-    if (!day) return [];
-    const startingCash = Math.max(0, Math.round(asNumber(raw.startingCash, cash)));
-    const income = Math.max(0, Math.round(asNumber(raw.income, 0)));
-    const expenses = Math.max(0, Math.round(asNumber(raw.expenses, 0)));
-    return [{
-      day,
-      startingCash,
-      income,
-      expenses,
-      endingCash: Math.max(0, Math.round(asNumber(raw.endingCash, startingCash + income - expenses)))
-    }];
-  });
-  const deduped = entries.filter((entry, index) => entries.findIndex((candidate) => candidate.day === entry.day) === index);
-  const withCurrent = deduped.some((entry) => entry.day === currentDay) ? deduped : [...deduped, ledgerEntryFor(currentDay, cash)];
-  return withCurrent.sort((a, b) => a.day - b.day).slice(-60);
-}
-
-function normalizeGrants(value: unknown): GrantApplication[] {
-  const saved = Array.isArray(value) ? value.filter(isRecord) : [];
-  return grantCatalog.map((grant) => {
-    const found = saved.find((entry) => entry.id === grant.id);
-    const status = ["Available", "Pending Review", "Approved", "Rejected", "On Cooldown"].includes(String(found?.status))
-      ? String(found?.status) as GrantStatus
-      : "Available";
-    return {
-      id: grant.id,
-      status,
-      daysRemaining: Math.max(0, Math.floor(asNumber(found?.daysRemaining, 0))),
-      cooldownRemaining: Math.max(0, Math.floor(asNumber(found?.cooldownRemaining, 0))),
-      lastResult: found?.lastResult === "Approved" || found?.lastResult === "Rejected" ? found.lastResult : undefined,
-      lastMessage: typeof found?.lastMessage === "string" ? found.lastMessage : undefined
-    };
-  });
-}
-
-function normalizeGame(data: unknown): GameState {
-  if (!isRecord(data)) return newGame();
-  const difficulty = isDifficulty(data.difficulty) ? data.difficulty : "Normal";
-  const fresh = newGame(difficulty);
-  const day = Math.max(1, asNumber(data.day, fresh.day));
-  const location = isLocation(data.location) ? data.location : fresh.location;
-  const requests = normalizeRequests(data.requests);
-  const ownedInfrastructure = normalizeInfrastructure(data.ownedInfrastructure);
-  const labStations = normalizeLabStations(data.labStations);
-  const labAssignments = normalizeLabAssignments(data.labAssignments);
-  const shopInventories = normalizeShopInventories(data.shopInventories, difficulty);
-  const cash = asNumber(data.cash, fresh.cash);
-  const normalized: GameState = {
-    ...fresh,
-    day,
-    cash,
-    reputation: asNumber(data.reputation, fresh.reputation),
-    communityTrust: asNumber(data.communityTrust, 0),
-    energy: asNumber(data.energy, fresh.energy),
-    stress: asNumber(data.stress, fresh.stress),
-    inventory: normalizeInventory(data.inventory),
-    offers: shopInventories[location] ?? [],
-    shopInventories,
-    shopRefreshes: normalizeShopRefreshes(data.shopRefreshes),
-    requests: requests.length ? requests : generateWeeklyRequests(currentWeekFor(day), difficulty),
-    requestWeek: asNumber(data.requestWeek, currentWeekFor(day)),
-    pendingDonation: normalizePendingDonation(data.pendingDonation),
-    ownedInfrastructure,
-    labStations,
-    labAssignments,
-    completedRequests: Math.max(0, Math.floor(asNumber(data.completedRequests, 0))),
-    hostedServices: normalizeHostedServices(data.hostedServices),
-    hostingProjects: normalizeHostingProjects(data.hostingProjects),
-    repairsToday: Math.max(0, Math.floor(asNumber(data.repairsToday, 0))),
-    extraRepairsPurchasedThisWeek: Math.max(0, Math.floor(asNumber(data.extraRepairsPurchasedThisWeek, 0))),
-    difficulty,
-    creditScore: clampStat(Math.round(asNumber(data.creditScore, difficultyConfig(difficulty).creditScore)), 0, 100),
-    loans: normalizeLoans(data.loans),
-    grants: normalizeGrants(data.grants),
-    location,
-    log: Array.isArray(data.log) ? data.log.filter((entry): entry is string => typeof entry === "string").slice(0, 12) : fresh.log,
-    weeklyStats: emptyWeeklyStats(),
-    weekStart: (() => {
-      const ws: Record<string, unknown> = isRecord(data.weekStart) ? data.weekStart : {};
-      return { cash: asNumber(ws.cash, fresh.cash), reputation: asNumber(ws.reputation, 0), communityTrust: asNumber(ws.communityTrust, 0), labProgress: asNumber(ws.labProgress, 0) };
-    })(),
-    weeklyReport: null,
-    reportHistory: Array.isArray(data.reportHistory) ? data.reportHistory.filter(isRecord).slice(0, 10).map((r) => ({
-      week: asNumber(r.week, 1), day: asNumber(r.day, 7), donated: asNumber(r.donated, 0), requestsFulfilled: asNumber(r.requestsFulfilled, 0),
-      itemsSold: asNumber(r.itemsSold, 0), itemsScrapped: asNumber(r.itemsScrapped, 0), itemsAssignedToLab: asNumber(r.itemsAssignedToLab, 0),
-      repairsSucceeded: asNumber(r.repairsSucceeded, 0), repairsFailed: asNumber(r.repairsFailed, 0), repairsJunked: asNumber(r.repairsJunked, 0),
-      grantsApplied: asNumber(r.grantsApplied, 0), grantsApproved: asNumber(r.grantsApproved, 0), grantsRejected: asNumber(r.grantsRejected, 0), grantIncome: asNumber(r.grantIncome, 0), hostingIncome: asNumber(r.hostingIncome, 0),
-      cashEarned: asNumber(r.cashEarned, 0), cashSpent: asNumber(r.cashSpent, 0), reputationGained: asNumber(r.reputationGained, 0),
-      trustGained: asNumber(r.trustGained, 0), labProgressGained: asNumber(r.labProgressGained, 0),
-      hostedServicesActive: asNumber(r.hostedServicesActive, 0), avgUptime: asNumber(r.avgUptime, 0), loansActive: asNumber(r.loansActive, 0),
-      flavor: typeof r.flavor === "string" ? r.flavor : "A week of tech hustle."
-    })) : [],
-    ledger: normalizeLedger(data.ledger, day, cash),
-    unlockedDistricts: Array.isArray(data.unlockedDistricts)
-      ? data.unlockedDistricts.filter((d): d is DistrictName => districtNames.includes(d as DistrictName))
-      : startingDistricts(),
-    districtProgress: (() => {
-      const base = emptyDistrictProgress();
-      if (isRecord(data.districtProgress)) {
-        districtNames.forEach((n) => {
-          const v = (data.districtProgress as Record<string, unknown>)[n];
-          if (typeof v === "number") base[n] = Math.max(0, Math.floor(v));
-        });
-      }
-      return base;
-    })(),
-    dataCenterUnlocked: Boolean(data.dataCenterUnlocked)
-  };
-  return reconcileLabInfraProgress(normalized);
-}
-
-function reconcileLabInfraProgress(state: GameState): GameState {
-  const reconciledLabStations = { ...state.labStations };
-  labStationCatalog.forEach((station) => {
-    const inferredLevel = state.labAssignments.filter((assignment) =>
-      assignment.station === station.name &&
-      !assignment.id.startsWith("infra-") &&
-      (assignment.source === "Purchased" || assignment.id.startsWith("lab"))
-    ).length;
-    reconciledLabStations[station.name] = clampStat(
-      Math.max(reconciledLabStations[station.name] ?? 0, inferredLevel),
-      0,
-      station.maxLevel
-    );
-  });
-  const reconciled: GameState = {
-    ...state,
-    labStations: reconciledLabStations
-  };
-  return {
-    ...reconciled,
-    dataCenterUnlocked: reconciled.dataCenterUnlocked || dataCenterUnlockedFor(reconciled)
-  };
-}
-
-function normalizeSaveSlots(value: unknown): SaveSlot[] {
-  const defaults = defaultSaveSlots();
-  if (!Array.isArray(value)) return defaults;
-  return defaults.map((fallback) => {
-    const raw = value.find((slot) => isRecord(slot) && asNumber(slot.id, 0) === fallback.id);
-    if (!isRecord(raw)) return fallback;
-    return {
-      id: fallback.id,
-      name: typeof raw.name === "string" && raw.name.trim() ? raw.name : fallback.name,
-      savedAt: typeof raw.savedAt === "string" ? raw.savedAt : null,
-      game: raw.game ? normalizeGame(raw.game) : null
-    };
-  });
-}
-
-function readSaveSlots(): SaveSlot[] {
-  try {
-    const raw = window.localStorage.getItem(saveStorageKey);
-    return raw ? normalizeSaveSlots(JSON.parse(raw)) : defaultSaveSlots();
-  } catch {
-    return defaultSaveSlots();
-  }
-}
-
-function readDailyAutosave(): SaveSlot | null {
-  try {
-    const raw = window.localStorage.getItem(dailyAutosaveStorageKey);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!isRecord(parsed) || !parsed.game) return null;
-    return {
-      id: 0,
-      name: "Daily Autosave",
-      savedAt: typeof parsed.savedAt === "string" ? parsed.savedAt : null,
-      game: normalizeGame(parsed.game)
-    };
-  } catch {
-    return null;
-  }
 }
 
 function statusClass(status: StorageStatus) {
@@ -1771,8 +1113,8 @@ function scrapButtonReason(item: InventoryItem) {
 
 function App() {
   const [game, setGame] = React.useState<GameState>(() => newGame());
-  const [saveSlots, setSaveSlots] = React.useState<SaveSlot[]>(() => readSaveSlots());
-  const [dailyAutosave, setDailyAutosave] = React.useState<SaveSlot | null>(() => readDailyAutosave());
+  const [saveSlots, setSaveSlots] = React.useState<SaveSlot[]>(() => readSaveSlots(newGame));
+  const [dailyAutosave, setDailyAutosave] = React.useState<SaveSlot | null>(() => readDailyAutosave(newGame));
   const [saved, setSaved] = React.useState("Manual saves ready");
   const [donationItemId, setDonationItemId] = React.useState<string | null>(null);
   const [opsTab, setOpsTab] = React.useState<OpsTab>("Infrastructure");
@@ -1819,7 +1161,7 @@ function App() {
     }
     window.cafSave?.load().then((data) => {
       if (data && typeof data === "object" && "cash" in data) {
-        const migrated = normalizeGame(data);
+        const migrated = normalizeGame(data, newGame);
         setGame(migrated);
         lastAutosavedDayRef.current = migrated.day;
         setSaved("Migrated old autosave");
