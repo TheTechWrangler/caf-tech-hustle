@@ -1,4 +1,5 @@
 import type { WeeklyReport } from "../types";
+import "./ReportHistoryModal.css";
 
 function exportImpactHistoryTxt(reports: WeeklyReport[]) {
   const lines: string[] = [
