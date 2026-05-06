@@ -27,3 +27,4 @@ Thumbs.db
 
 # Separate Godot experiment/project
 caf-tech-hustle-godot/
+.aider*
