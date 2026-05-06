@@ -1591,58 +1591,6 @@ h2 {
   max-height: none;
 }
 
-.donationChoiceModal {
-  width: min(720px, calc(100vw - 48px));
-}
-
-.donationItemSummary {
-  display: grid;
-  gap: 4px;
-  margin-bottom: 10px;
-  padding: 9px;
-  border: 1px dashed #ffd857;
-  background: rgba(255, 216, 87, 0.08);
-}
-
-.donationItemSummary strong {
-  color: #ffffff;
-}
-
-.donationItemSummary span {
-  color: #aeb7d3;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.donationOptions {
-  display: grid;
-  gap: 8px;
-}
-
-.donationOption {
-  display: grid;
-  gap: 4px;
-  width: 100%;
-  text-align: left;
-  border-color: #7ee7c8;
-  background: #202234;
-}
-
-.donationOption.future {
-  border-color: #3a3a52;
-  background: #141420;
-}
-
-.donationOption strong {
-  color: #ffffff;
-}
-
-.donationOption span {
-  color: #aeb7d3;
-  font-size: 11px;
-  font-weight: 900;
-}
-
 .emptyZone {
   min-height: 110px;
   display: grid;

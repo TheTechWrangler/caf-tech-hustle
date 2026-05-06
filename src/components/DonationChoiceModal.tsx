@@ -1,4 +1,5 @@
 import type { GameState, InventoryItem, DonationDestination, FutureDonationDestination } from "../types";
+import "./DonationChoiceModal.css";
 import { conditionFromStatus, hostingWeeklyPayout } from "../utils";
 import { itemFairValue, itemResaleEstimate, scrapValue, infrastructureItemTypesNeeded } from "../gameHelpers";
 import { canDonateItem, donateButtonReason, bulkItemValue } from "../inventoryHelpers";
