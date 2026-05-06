@@ -88,7 +88,8 @@ import {
   isHighEndBusinessItem, deriveItemQuality, refreshPricingForItem,
   processedItemCount, assignedTypeCount, unmetInfrastructureRequirements,
   buildDailyUpdate, calculateOperatingCosts,
-  conditionForLocation, hiddenConditionForInventory, marketFor, createShopInventories
+  conditionForLocation, hiddenConditionForInventory, marketFor, createShopInventories,
+  infrastructureItemTypesNeeded
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -238,18 +239,6 @@ function infrastructureStagingStationFor(type: ItemType): LabStationName {
   return "Testing Bench";
 }
 
-function infrastructureItemTypesNeeded(facility: InfrastructureDefinition): Array<{ label: string; types: ItemType[]; count: number }> {
-  const needs: Array<{ label: string; types: ItemType[]; count: number }> = [];
-  Object.entries(facility.requirements.assignedTypes ?? {}).forEach(([type, count]) => {
-    needs.push({ label: `${count} ${type} staged`, types: [type as ItemType], count: count ?? 0 });
-  });
-  facility.requirements.assignedAny?.forEach((requirement) => needs.push({
-    label: requirement.label,
-    types: requirement.types,
-    count: requirement.count
-  }));
-  return needs;
-}
 
 function matchingStorageForTypes(items: InventoryItem[], types: ItemType[]) {
   return items.filter((item) => types.includes(item.type) && usableForLab(item));

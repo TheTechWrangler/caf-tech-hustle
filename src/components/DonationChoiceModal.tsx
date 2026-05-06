@@ -1,21 +1,8 @@
-import type { GameState, InventoryItem, DonationDestination, FutureDonationDestination, InfrastructureDefinition, ItemType } from "../types";
+import type { GameState, InventoryItem, DonationDestination, FutureDonationDestination } from "../types";
 import { conditionFromStatus, hostingWeeklyPayout } from "../utils";
-import { itemFairValue, itemResaleEstimate, scrapValue } from "../gameHelpers";
+import { itemFairValue, itemResaleEstimate, scrapValue, infrastructureItemTypesNeeded } from "../gameHelpers";
 import { canDonateItem, donateButtonReason, bulkItemValue } from "../inventoryHelpers";
 import { PanelTitle } from "./PanelTitle";
-
-function infrastructureItemTypesNeeded(facility: InfrastructureDefinition): Array<{ label: string; types: ItemType[]; count: number }> {
-  const needs: Array<{ label: string; types: ItemType[]; count: number }> = [];
-  Object.entries(facility.requirements.assignedTypes ?? {}).forEach(([type, count]) => {
-    needs.push({ label: `${count} ${type} staged`, types: [type as ItemType], count: count ?? 0 });
-  });
-  facility.requirements.assignedAny?.forEach((requirement) => needs.push({
-    label: requirement.label,
-    types: requirement.types,
-    count: requirement.count
-  }));
-  return needs;
-}
 
 function donationDestinationDetail(destination: DonationDestination, game: GameState, item: InventoryItem): string {
   if (destination.kind === "request") {
