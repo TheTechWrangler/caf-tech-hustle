@@ -80,7 +80,7 @@ import {
   baseResaleValue, fairMarketValue, expectedResaleValue, itemFairValue, itemResaleEstimate,
   usableForHosting, selectHostingEquipment, hostingProjectAvailability,
   hostingProjectStateFor, completedHostingDefinitions,
-  monthlyHostingIncome, weeklyHostingIncome, hostingSlotUnlockText,
+  weeklyHostingIncome, hostingSlotUnlockText,
   freshGrants, grantStateFor,
   dataCenterRequirements, districtUnlockHint, districtRequirementRows,
   dataCenterUnlockedFor, donatedDeviceCount, infrastructureLevelTotal,
@@ -357,38 +357,44 @@ function sellOfferValue(item: InventoryItem, state: Pick<GameState, "reputation"
 
 
 
-function businessOfferForItem(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">): BusinessOffer {
+function businessOfferForItem(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">, progressScore: number = 100): BusinessOffer {
   const resale = itemResaleEstimate(item);
   const quality = itemQuality(item);
   const highEnd = isHighEndBusinessItem(item);
   const rollValue = stableRatio(`${item.id}:${state.difficulty}:business-offer`);
-  const canPremium = highEnd && (quality === "Excellent" || quality === "Pristine") && rollValue < 0.002;
+  // Premium offers require some progression — early players only get bargain buyers
+  const canPremium = highEnd && (quality === "Excellent" || quality === "Pristine") && rollValue < 0.002
+    && (state.reputation >= 35 || progressScore >= 25);
   if (canPremium) {
     const premiumRoll = stableRatio(`${item.id}:premium-multiplier`);
     const multiplier = rollFloatSeeded(1.4, 2, premiumRoll);
     return { value: Math.max(1, Math.round(resale * multiplier)), label: "Rare Premium Offer", className: "great", multiplier, premium: true };
   }
-  let min = 0.85;
-  let max = 1.05;
+  // Early-game penalty: bargain buyers dominate before reputation/lab progress develops
+  const earlyPenalty = (state.reputation < 25 && progressScore < 20) ? -0.12 : 0;
+  let min = 0.85 + earlyPenalty;
+  let max = 1.05 + earlyPenalty;
   if (quality === "Excellent") {
-    min = 0.95;
-    max = 1.15;
+    min = 0.95 + earlyPenalty;
+    max = 1.15 + earlyPenalty;
   }
   if (quality === "Pristine") {
-    min = 1.05;
-    max = 1.25;
+    min = 1.05 + earlyPenalty;
+    max = 1.25 + earlyPenalty;
   }
   const difficultyBump = state.difficulty === "Easy" ? 0.01 : state.difficulty === "Hard" ? -0.03 : state.difficulty === "Chaos Mode" ? -0.02 : 0;
   const trustBump = Math.min(0.02, (state.reputation + state.communityTrust) / 2200);
   const multiplier = clampStat(rollFloatSeeded(min, max, stableRatio(`${item.id}:business-multiplier`)) + difficultyBump + trustBump, min, max);
   const value = Math.max(1, Math.round(resale * multiplier));
   const ratio = value / Math.max(1, resale);
-  const label = ratio >= 1.05 ? "Good Business Offer" : "Fair Business Offer";
+  const label = earlyPenalty < 0
+    ? (ratio >= 0.93 ? "Bargain Buyer Offer" : "Below-Market Offer")
+    : ratio >= 1.05 ? "Good Business Offer" : "Fair Business Offer";
   return { value, label, className: ratio >= 1.05 ? "good" : "fair", multiplier, premium: false };
 }
 
-function businessSaleValue(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">): number {
-  return businessOfferForItem(item, state).value;
+function businessSaleValue(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">, progressScore: number = 100): number {
+  return businessOfferForItem(item, state, progressScore).value;
 }
 
 function repairJunkChance(item: InventoryItem) {
@@ -1033,6 +1039,7 @@ function newGame(difficulty: Difficulty = "Normal"): GameState {
     hostedServices: [],
     hostingProjects: freshHostingProjects(),
     repairsToday: 0,
+    extraRepairsPurchasedThisWeek: 0,
     difficulty,
     creditScore: config.creditScore,
     loans: [],
@@ -1408,6 +1415,7 @@ function normalizeGame(data: unknown): GameState {
     hostedServices: normalizeHostedServices(data.hostedServices),
     hostingProjects: normalizeHostingProjects(data.hostingProjects),
     repairsToday: Math.max(0, Math.floor(asNumber(data.repairsToday, 0))),
+    extraRepairsPurchasedThisWeek: Math.max(0, Math.floor(asNumber(data.extraRepairsPurchasedThisWeek, 0))),
     difficulty,
     creditScore: clampStat(Math.round(asNumber(data.creditScore, difficultyConfig(difficulty).creditScore)), 0, 100),
     loans: normalizeLoans(data.loans),
@@ -1521,9 +1529,14 @@ function statusClass(status: StorageStatus) {
 
 function repairNumbers(item: InventoryItem, labStations: Partial<Record<LabStationName, number>> = {}) {
   const needsParts = item.condition === "Needs Parts";
+  const isBroken = item.condition === "Broken" || conditionFromStatus(item.status) === "Broken";
   const lab = labBonuses(labStations);
+  const rawCost = Math.max(0, item.repairCost + (needsParts ? 6 : 0) - lab.repairCostReduction);
+  const fair = itemFairValue(item);
+  const floorPct = isBroken ? 0.22 : 0.11;
+  const floor = Math.max(5, Math.round(fair * floorPct));
   return {
-    cash: Math.max(0, item.repairCost + (needsParts ? 6 : 0) - lab.repairCostReduction),
+    cash: Math.max(floor, rawCost),
     energy: actionEnergyCost(item.energy + (needsParts ? 1 : 0))
   };
 }
@@ -1855,7 +1868,6 @@ function App() {
   const currentStorageCount = activeItemCount(game.inventory);
   const hostingUsed = hostingSlotsUsed(game.hostedServices);
   const avgUptime = averageUptime(game.hostedServices);
-  const hostingMonthlyIncome = monthlyHostingIncome(game);
   const hostingWeeklyIncome = weeklyHostingIncome(game);
   const hostingPayoutDay = nextHostingPayoutDay(game.day);
   const labProgressValue = labProgress(game);
@@ -2096,6 +2108,16 @@ function App() {
       const outcomeRoll = Math.random();
       const junked = outcomeRoll < junkChance;
       const success = !junked && outcomeRoll < junkChance + chance;
+      // Troubleshooting save: on plain failure, roll to preserve the repair slot at cost of 1 energy
+      const q = itemQuality(item);
+      const saveChance = (item.condition === "Broken" || conditionFromStatus(item.status) === "Broken") ? 0.30
+        : q === "Pristine" || q === "Excellent" ? 0.70
+        : q === "Good" ? 0.60
+        : q === "Standard" ? 0.50
+        : 0.40;
+      const troubleshootSave = !success && !junked && state.energy >= 1 && Math.random() < saveChance;
+      const slotConsumed = success || junked || !troubleshootSave;
+      const energyUsed = troubleshootSave ? 1 : cost.energy;
       const inventory = state.inventory.map((stored) =>
         stored.id === item.id
           ? refreshPricingForItem({
@@ -2109,8 +2131,8 @@ function App() {
         {
           ...state,
           ...withCashChange(state, -cost.cash, `Repair: ${item.name}`),
-          energy: state.energy - cost.energy,
-          repairsToday: state.repairsToday + 1,
+          energy: state.energy - energyUsed,
+          repairsToday: state.repairsToday + (slotConsumed ? 1 : 0),
           stress: clampStat(state.stress + (success ? 0 : difficultyStress(state, junked ? 2 : 1)), 0, 20),
           weeklyStats: {
             ...state.weeklyStats,
@@ -2125,7 +2147,32 @@ function App() {
           ? `${item.name} repair succeeded. It is tested and ready to route.`
           : junked
             ? `Repair failed badly. ${item.name} is now junked.`
-            : `${item.name} still needs repair. Stress +1.`
+            : troubleshootSave
+              ? `Repair failed, but you caught the issue early. Lost 1 energy; repair capacity preserved.`
+              : `${item.name} still needs repair. Repair slot consumed. Stress +1.`
+      );
+    });
+  };
+
+  const EXTRA_REPAIR_COSTS = [25, 45, 75] as const;
+
+  const buyExtraRepair = () => {
+    setGame((state) => {
+      const purchased = state.extraRepairsPurchasedThisWeek ?? 0;
+      if (purchased >= 3) {
+        return pushLog(state, "Contract repair help maxed this week (3/3). Resets next week.");
+      }
+      const cost = EXTRA_REPAIR_COSTS[purchased];
+      if (state.cash < cost) {
+        return pushLog(state, `Need $${cost} to hire contract repair help (${purchased + 1}/3 this week).`);
+      }
+      return pushLog(
+        {
+          ...withCashChange(state, -cost, "Contract repair help"),
+          extraRepairsPurchasedThisWeek: purchased + 1,
+          repairsToday: Math.max(0, state.repairsToday - 1)
+        },
+        `Contract repair help hired ($${cost}). +1 repair slot freed up today. (${purchased + 1}/3 this week)`
       );
     });
   };
@@ -2155,7 +2202,7 @@ function App() {
     setGame((state) => {
       const reason = businessSaleReason(item);
       if (reason !== "Ready for Business Sales.") return pushLog(state, `${item.name}: ${reason}`);
-      const offer = businessOfferForItem(item, state);
+      const offer = businessOfferForItem(item, state, labProgress(state));
       const value = offer.value;
       return pushLog(
         {
@@ -3027,7 +3074,8 @@ function App() {
           weeklyReport: report,
           reportHistory: [report, ...next.reportHistory].slice(0, 10),
           weeklyStats: emptyWeeklyStats(),
-          weekStart: { cash: next.cash, reputation: next.reputation, communityTrust: next.communityTrust, labProgress: prog }
+          weekStart: { cash: next.cash, reputation: next.reputation, communityTrust: next.communityTrust, labProgress: prog },
+          extraRepairsPurchasedThisWeek: 0
         };
       }
       const { newDistricts, messages: districtMessages } = checkDistrictUnlocks(next, labProgress(next));
@@ -3221,7 +3269,7 @@ function App() {
                   {businessItems.map((item) => {
                     const fair = itemFairValue(item);
                     const resale = itemResaleEstimate(item);
-                    const offer = businessOfferForItem(item, game);
+                    const offer = businessOfferForItem(item, game, labProgressValue);
                     const heat = sellPriceHeat(offer.value, resale);
                     const profit = item.buyPrice ? offer.value - item.buyPrice : null;
                     const quality = itemQuality(item);
@@ -3585,7 +3633,6 @@ function App() {
           <HostingProjectsPanel
             game={game}
             stats={infraStats}
-            monthlyIncome={hostingMonthlyIncome}
             nextPayoutDay={hostingPayoutDay}
             onComplete={completeHostingProject}
           />
@@ -3605,6 +3652,7 @@ function App() {
             onUseStorageForLab={useStorageForLab}
             onBuyLabEquipment={buyLabEquipment}
             onStageInfrastructureItem={stageItemForInfrastructure}
+            onBuyExtraRepair={buyExtraRepair}
           />
         </section>
 
@@ -4026,7 +4074,7 @@ function OperationsDashboard({
         <PanelTitle heading="Business Sale Requests" sub={`${businessItems.length} ready`} />
         <div className="opsDemandBody">
           {businessItems.length ? businessItems.map((item) => {
-            const offer = businessOfferForItem(item, game);
+            const offer = businessOfferForItem(item, game, labProgress(game));
             return (
               <article className="opsDemandCard" key={item.id} onMouseEnter={() => onSelectDemand("business")}>
                 <div><strong>{item.name}</strong><span>${offer.value}</span></div>
@@ -4045,13 +4093,11 @@ function OperationsDashboard({
 function HostingProjectsPanel({
   game,
   stats,
-  monthlyIncome,
   nextPayoutDay,
   onComplete
 }: {
   game: GameState;
   stats: ReturnType<typeof infrastructureStats>;
-  monthlyIncome: number;
   nextPayoutDay: number;
   onComplete: (project: HostingProjectDefinition) => void;
 }) {
@@ -4134,7 +4180,8 @@ function OpsPanel({
   onTakeLoan,
   onUseStorageForLab,
   onBuyLabEquipment,
-  onStageInfrastructureItem
+  onStageInfrastructureItem,
+  onBuyExtraRepair
 }: {
   activeTab: OpsTab;
   onTabChange: (tab: OpsTab) => void;
@@ -4148,6 +4195,7 @@ function OpsPanel({
   onUseStorageForLab: (station: LabStationName, itemId: string) => void;
   onBuyLabEquipment: (station: LabStationName) => void;
   onStageInfrastructureItem: (facility: InfrastructureDefinition, item: InventoryItem) => void;
+  onBuyExtraRepair: () => void;
 }) {
   return (
     <>
@@ -4174,6 +4222,7 @@ function OpsPanel({
           stats={stats}
           onUseStorageForLab={onUseStorageForLab}
           onBuyLabEquipment={onBuyLabEquipment}
+          onBuyExtraRepair={onBuyExtraRepair}
         />
       ) : null}
       {activeTab === "Loans" ? (
@@ -4188,12 +4237,14 @@ function BuildLabPanel({
   game,
   stats,
   onUseStorageForLab,
-  onBuyLabEquipment
+  onBuyLabEquipment,
+  onBuyExtraRepair
 }: {
   game: GameState;
   stats: ReturnType<typeof infrastructureStats>;
   onUseStorageForLab: (station: LabStationName, itemId: string) => void;
   onBuyLabEquipment: (station: LabStationName) => void;
+  onBuyExtraRepair: () => void;
 }) {
   const progress = labProgress(game);
   const tier = labTierInfo(progress);
@@ -4229,6 +4280,23 @@ function BuildLabPanel({
         <span>Hosting {stats.hostingCapacity}</span>
         <span>Processed {processedItemCount(game)}</span>
       </div>
+      {(() => {
+        const purchased = game.extraRepairsPurchasedThisWeek ?? 0;
+        const COSTS = [25, 45, 75];
+        const nextCost = purchased < 3 ? COSTS[purchased] : null;
+        return (
+          <div className="extraRepairRow">
+            <span>Contract repair help: {purchased}/3 used this week</span>
+            {nextCost !== null ? (
+              <button onClick={onBuyExtraRepair} disabled={game.cash < nextCost}>
+                Hire help (${nextCost}) — frees 1 repair slot today
+              </button>
+            ) : (
+              <span className="capWarning">Maxed for this week. Resets next week.</span>
+            )}
+          </div>
+        );
+      })()}
       <div className="stationGrid">
         {labStationCatalog.map((station) => {
           const level = game.labStations[station.name] ?? 0;

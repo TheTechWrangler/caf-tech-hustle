@@ -1110,6 +1110,22 @@ h2 {
   color: #ffb0c4 !important;
 }
 
+.extraRepairRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.extraRepairRow span {
+  font-size: 10px;
+  color: #aaa;
+}
+.extraRepairRow button {
+  font-size: 10px;
+  padding: 3px 8px;
+}
+
 .unmetReqs {
   display: flex;
   flex-direction: column;

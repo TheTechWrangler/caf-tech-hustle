@@ -350,6 +350,7 @@ export type GameState = {
   unlockedDistricts: DistrictName[];
   districtProgress: Record<DistrictName, number>;
   dataCenterUnlocked: boolean;
+  extraRepairsPurchasedThisWeek: number;
 };
 
 export type SaveSlot = {
@@ -471,7 +472,7 @@ export type PriceHeat = {
 
 export type BusinessOffer = {
   value: number;
-  label: "Fair Business Offer" | "Good Business Offer" | "Rare Premium Offer";
+  label: "Fair Business Offer" | "Good Business Offer" | "Rare Premium Offer" | "Bargain Buyer Offer" | "Below-Market Offer";
   className: string;
   multiplier: number;
   premium: boolean;
