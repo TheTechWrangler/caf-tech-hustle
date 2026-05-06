@@ -1,4 +1,5 @@
 import { HardDrive } from "lucide-react";
+import "./HostingProjectsPanel.css";
 import type { GameState, HostingProjectDefinition } from "../types";
 import { hostingSlotsUsed, averageUptime, infrastructureStats } from "../utils";
 import { hostingProjectStateFor, weeklyHostingIncome, hostingSlotUnlockText, hostingProjectAvailability } from "../gameHelpers";

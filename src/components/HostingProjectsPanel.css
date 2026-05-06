@@ -1,0 +1,117 @@
+.hostingPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hostingSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.hostingSummary span {
+  padding: 3px 6px;
+  border: 1px solid #61637c;
+  border-radius: 6px;
+  background: #202234;
+  color: #ffd857;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hostingColumns {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(260px, 1fr);
+  gap: 9px;
+  flex: 1;
+  min-height: 0;
+}
+
+.hostingColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.hostingColumn h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 6px 7px;
+  border: 1px solid #61637c;
+  background: #181722;
+  color: #7ee7c8;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.hostingCard {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #61637c;
+  background: #232538;
+}
+
+.hostingCard.available {
+  border-color: #ffd857;
+}
+
+.hostingCard.active {
+  border-color: #7ee7c8;
+}
+
+.hostingCard.locked {
+  opacity: 0.76;
+}
+
+.hostingCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.hostingCardHeader strong {
+  color: #ffffff;
+}
+
+.hostingCardHeader span {
+  color: #ffd857;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hostingCard p {
+  margin: 0;
+  color: #f7f2d6;
+  font-size: 11px;
+  line-height: 1.22;
+}
+
+.hostingCard small {
+  color: #aeb7d3;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.hostingCard .hostingMissing {
+  color: #ffb0c4;
+}
+
+.hostingCard button {
+  justify-self: start;
+  padding: 6px 8px;
+  font-size: 10px;
+  background: #178c83;
+  box-shadow: 2px 2px 0 #05050a;
+}
