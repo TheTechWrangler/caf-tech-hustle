@@ -115,6 +115,7 @@ import { ledgerEntryFor, ensureLedgerDay, withCashChange, startLedgerDay } from 
 import { itemQuality, businessOfferForItem, businessSaleValue, repairJunkChance, cleanTestDestroyChance, repairNumbers } from "./repairHelpers";
 import { rollDonationTier, hiddenConditionFor, generateSurpriseDonation, donationConditionToStatus } from "./donationHelpers";
 import { grantApprovalChance, grantPayout, approvedGrantMessage, rejectedGrantMessage, processGrantDay } from "./grantHelpers";
+import { loanRequirementLabels, activeLoanCountByType, loanUnlocked, effectiveLoanInterest, nextLoanDueDay, createLoan } from "./loanHelpers";
 import { Stat } from "./components/Stat";
 import { MilestoneList } from "./components/MilestoneList";
 import { ShopForPanel } from "./components/ShopForPanel";
@@ -479,59 +480,6 @@ function serviceUptimeChange(services: HostedService[], amount: number) {
     ...service,
     uptime: clampStat(service.uptime + amount, 55, 100)
   }));
-}
-
-function loanRequirementLabels(requirements: LoanDefinition["requirements"]) {
-  const labels: string[] = [];
-  if (requirements.reputation) labels.push(`Rep ${requirements.reputation}`);
-  if (requirements.communityTrust) labels.push(`Trust ${requirements.communityTrust}`);
-  if (requirements.completedRequests) labels.push(`${requirements.completedRequests} requests`);
-  if (requirements.maxLoans) labels.push(`Max ${requirements.maxLoans} active loans`);
-  return labels;
-}
-
-function activeLoanCountByType(state: GameState, type: LoanType) {
-  return state.loans.filter((loan) => loan.type === type).length;
-}
-
-function loanUnlocked(state: GameState, definition: LoanDefinition) {
-  const requirements = definition.requirements;
-  return (
-    (requirements.reputation ?? 0) <= state.reputation &&
-    (requirements.communityTrust ?? 0) <= state.communityTrust &&
-    (requirements.completedRequests ?? 0) <= state.completedRequests &&
-    (requirements.maxLoans ?? 99) > state.loans.length &&
-    activeLoanCountByType(state, definition.type) < definition.maxActive
-  );
-}
-
-function effectiveLoanInterest(state: GameState, definition: LoanDefinition) {
-  const config = difficultyConfig(state.difficulty);
-  const loanStack = state.loans.length * 0.025;
-  const creditPenalty = Math.max(0, 70 - state.creditScore) / 200;
-  const chaos = state.difficulty === "Chaos Mode" ? roll(-2, 5) / 100 : 0;
-  return Math.max(0.04, definition.baseInterest * config.loanInterest + loanStack + creditPenalty + chaos);
-}
-
-function nextLoanDueDay(day: number, cadence: LoanCadence) {
-  return day + (cadence === "Weekly" ? 7 : 28);
-}
-
-function createLoan(state: GameState, definition: LoanDefinition): Loan {
-  const interestRate = effectiveLoanInterest(state, definition);
-  const remainingBalance = Math.round(definition.amount * (1 + interestRate));
-  const payment = Math.max(10, Math.round(definition.basePayment * difficultyConfig(state.difficulty).loanInterest));
-  return {
-    id: id("loan"),
-    type: definition.type,
-    amount: definition.amount,
-    interestRate,
-    payment,
-    cadence: definition.cadence,
-    remainingBalance,
-    nextDueDay: nextLoanDueDay(state.day, definition.cadence),
-    missedPayments: 0
-  };
 }
 
 
