@@ -413,3 +413,7 @@ export function dailyEnergyFor(state: Pick<GameState, "difficulty" | "ownedInfra
 export function statusClass(status: StorageStatus): string {
   return status.toLowerCase().replace(/\s+/g, "-");
 }
+
+export function labMilestone(progress: number) {
+  return labTierInfo(progress).current.name;
+}

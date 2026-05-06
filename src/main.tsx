@@ -75,7 +75,7 @@ import {
   labBonuses, infrastructureStats, labProgress, infrastructureProgress,
   labTierInfo, infrastructureTierInfo, mapUpgradePhase,
   maxEnergyFor, energyStackCapFor, dailyEnergyGainFor, dailyEnergyFor,
-  statusClass
+  statusClass, labMilestone
 } from "./utils";
 import {
   baseResaleValue, fairMarketValue, expectedResaleValue, itemFairValue, itemResaleEstimate,
@@ -90,7 +90,10 @@ import {
   processedItemCount, assignedTypeCount, unmetInfrastructureRequirements,
   buildDailyUpdate, calculateOperatingCosts,
   conditionForLocation, hiddenConditionForInventory, marketFor, createShopInventories,
-  infrastructureItemTypesNeeded
+  infrastructureItemTypesNeeded,
+  labStationDefinition, labCapReason, infrastructureCapReason,
+  usableForLab, availableLabItems, matchingStorageForTypes,
+  requirementLabels, infrastructureUnlocked
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -180,74 +183,11 @@ function chaosSwing(difficulty: Difficulty, low: number, high: number) {
 
 
 
-function labStationDefinition(name: LabStationName) {
-  return labStationCatalog.find((station) => station.name === name) ?? labStationCatalog[0];
-}
-
-
-
-function labMilestone(progress: number) {
-  return labTierInfo(progress).current.name;
-}
-
-
-function labProgressAfterStationChange(state: GameState, stationName: LabStationName, nextLevel: number, addAssignment: boolean) {
-  return labProgress({
-    ...state,
-    labStations: { ...state.labStations, [stationName]: nextLevel },
-    labAssignments: addAssignment
-      ? [...state.labAssignments, { id: "preview", station: stationName, itemName: "Preview", source: "Purchased" as const }]
-      : state.labAssignments
-  });
-}
-
-function infrastructureProgressAfterUpgrade(state: GameState, facilityName: InfrastructureName, nextLevel: number) {
-  return infrastructureProgress({
-    ownedInfrastructure: { ...state.ownedInfrastructure, [facilityName]: nextLevel }
-  });
-}
-
-function labCapReason(state: GameState, stationName: LabStationName, addAssignment = true) {
-  const currentLevel = state.labStations[stationName] ?? 0;
-  const station = labStationDefinition(stationName);
-  if (currentLevel >= station.maxLevel) return "";
-  const phase = mapUpgradePhase(state);
-  const projected = labProgressAfterStationChange(state, stationName, currentLevel + 1, addAssignment);
-  return projected > phase.cap ? `${capBlockMessage("Lab", phase.cap)} ${phase.next}` : "";
-}
-
-function infrastructureCapReason(state: GameState, facilityName: InfrastructureName) {
-  const facility = infrastructureCatalog.find((entry) => entry.name === facilityName);
-  if (!facility) return "";
-  const currentLevel = state.ownedInfrastructure[facilityName] ?? 0;
-  if (currentLevel >= facility.maxLevel) return "";
-  const phase = mapUpgradePhase(state);
-  const projected = infrastructureProgressAfterUpgrade(state, facilityName, currentLevel + 1);
-  return projected > phase.cap ? `${capBlockMessage("Infrastructure", phase.cap)} ${phase.next}` : "";
-}
-
-function usableForLab(item: InventoryItem) {
-  const condition = item.condition ?? conditionFromStatus(item.status);
-  return (item.status === "Tested" || isReadyStatus(item.status)) && (condition === "Working" || condition === "Refurbished");
-}
-
-function availableLabItems(state: GameState, station: LabStationDefinition) {
-  return state.inventory.filter((item) =>
-    !isInactiveStatus(item.status) &&
-    station.acceptedTypes.includes(item.type) &&
-    usableForLab(item)
-  );
-}
 
 function infrastructureStagingStationFor(type: ItemType): LabStationName {
   if (type === "Network" || type === "Cables") return "Network Corner";
   if (type === "Server" || type === "Workstation" || type === "Mini PC" || type === "Storage") return "Server Rack";
   return "Testing Bench";
-}
-
-
-function matchingStorageForTypes(items: InventoryItem[], types: ItemType[]) {
-  return items.filter((item) => types.includes(item.type) && usableForLab(item));
 }
 
 function uniqueShopForNeeds(needs: ShopForNeed[]) {
@@ -315,60 +255,6 @@ function shopForBadgesForOffer(offer: Offer, needs: ShopForNeed[]) {
   return badges;
 }
 
-function requirementLabels(requirements: InfrastructureDefinition["requirements"]) {
-  const labels: string[] = [];
-  if (requirements.labProgress) labels.push(`Lab ${requirements.labProgress}%`);
-  if (requirements.anyStationOrProcessed) {
-    labels.push(`${requirements.anyStationOrProcessed.station} L${requirements.anyStationOrProcessed.level} or ${requirements.anyStationOrProcessed.processedItems} processed items`);
-  }
-  if (requirements.stations) {
-    Object.entries(requirements.stations).forEach(([station, level]) => labels.push(`${station} L${level}`));
-  }
-  if (requirements.processedItems) labels.push(`${requirements.processedItems} processed items`);
-  if (requirements.assignedTypes) {
-    Object.entries(requirements.assignedTypes).forEach(([type, count]) => labels.push(`${count} ${type} assigned`));
-  }
-  requirements.assignedAny?.forEach((requirement) => labels.push(requirement.label));
-  if (requirements.hostingCapacity) labels.push(`Hosting ${requirements.hostingCapacity}`);
-  if (requirements.deploymentHistory) labels.push(`${requirements.deploymentHistory} deployments/history`);
-  if (requirements.reputation) labels.push(`Rep ${requirements.reputation}`);
-  if (requirements.communityTrust) labels.push(`Trust ${requirements.communityTrust}`);
-  if (requirements.completedRequests) labels.push(`${requirements.completedRequests} requests`);
-  if (requirements.facility) labels.push(`${requirements.facility} owned`);
-  return labels;
-}
-
-function infrastructureUnlocked(state: GameState, facility: InfrastructureDefinition) {
-  const requirements = facility.requirements;
-  const progress = labProgress(state);
-  const stats = infrastructureStats(state.ownedInfrastructure, state.labStations);
-  const stationRequirementsMet = Object.entries(requirements.stations ?? {}).every(([station, level]) =>
-    (state.labStations[station as LabStationName] ?? 0) >= (level ?? 0)
-  );
-  const typeRequirementsMet = Object.entries(requirements.assignedTypes ?? {}).every(([type, count]) =>
-    assignedTypeCount(state, [type as ItemType]) >= (count ?? 0)
-  );
-  const anyRequirementsMet = requirements.assignedAny?.every((requirement) =>
-    assignedTypeCount(state, requirement.types) >= requirement.count
-  ) ?? true;
-  const stationOrProcessed = !requirements.anyStationOrProcessed ||
-    (state.labStations[requirements.anyStationOrProcessed.station] ?? 0) >= requirements.anyStationOrProcessed.level ||
-    processedItemCount(state) >= requirements.anyStationOrProcessed.processedItems;
-  return (
-    progressMeets(progress, requirements.labProgress ?? 0) &&
-    stationRequirementsMet &&
-    typeRequirementsMet &&
-    anyRequirementsMet &&
-    stationOrProcessed &&
-    (requirements.processedItems ?? 0) <= processedItemCount(state) &&
-    (requirements.hostingCapacity ?? 0) <= stats.hostingCapacity &&
-    (requirements.deploymentHistory ?? 0) <= processedItemCount(state) &&
-    (requirements.reputation ?? 0) <= state.reputation &&
-    (requirements.communityTrust ?? 0) <= state.communityTrust &&
-    (requirements.completedRequests ?? 0) <= state.completedRequests &&
-    (!requirements.facility || state.ownedInfrastructure[requirements.facility] > 0)
-  );
-}
 
 function serviceUptimeChange(services: HostedService[], amount: number) {
   return services.map((service) => ({
