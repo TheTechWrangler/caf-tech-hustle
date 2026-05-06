@@ -116,6 +116,7 @@ import { itemQuality, businessOfferForItem, businessSaleValue, repairJunkChance,
 import { rollDonationTier, hiddenConditionFor, generateSurpriseDonation, donationConditionToStatus } from "./donationHelpers";
 import { grantApprovalChance, grantPayout, approvedGrantMessage, rejectedGrantMessage, processGrantDay } from "./grantHelpers";
 import { loanRequirementLabels, activeLoanCountByType, loanUnlocked, effectiveLoanInterest, nextLoanDueDay, createLoan } from "./loanHelpers";
+import { districtMarketStores, marketLocationsForDistricts, districtForMarketLocation, unlockedDistrictsWithoutMarketStores, locationToDistrict, checkDistrictUnlocks } from "./districtMarketHelpers";
 import { Stat } from "./components/Stat";
 import { MilestoneList } from "./components/MilestoneList";
 import { ShopForPanel } from "./components/ShopForPanel";
@@ -127,42 +128,6 @@ import { HostingProjectCard } from "./components/HostingProjectCard";
 import { DailyUpdateModal } from "./components/DailyUpdateModal";
 
 
-function districtMarketStores(district: DistrictName) {
-  return (districtLocations[district] ?? []).filter((location) => shopLocations.includes(location));
-}
-
-function marketLocationsForDistricts(unlockedDistricts: DistrictName[]) {
-  const seen = new Set<LocationName>();
-  const unlockedMarketLocations: LocationName[] = [];
-  districtCatalog.forEach((district) => {
-    if (!unlockedDistricts.includes(district.name)) return;
-    districtMarketStores(district.name).forEach((location) => {
-      if (seen.has(location)) return;
-      seen.add(location);
-      unlockedMarketLocations.push(location);
-    });
-  });
-  return unlockedMarketLocations.length ? unlockedMarketLocations : coreMarketLocations.filter((location) => shopLocations.includes(location));
-}
-
-function districtForMarketLocation(location: LocationName) {
-  const district = districtCatalog.find((entry) => districtMarketStores(entry.name).includes(location));
-  return district?.name ?? locationToDistrict(location);
-}
-
-function unlockedDistrictsWithoutMarketStores(unlockedDistricts: DistrictName[]) {
-  return districtCatalog
-    .filter((district) => unlockedDistricts.includes(district.name))
-    .filter((district) => district.name !== "Garage" && districtMarketStores(district.name).length === 0)
-    .map((district) => district.name);
-}
-
-function locationToDistrict(location: LocationName): DistrictName {
-  for (const [district, locs] of Object.entries(districtLocations) as [DistrictName, LocationName[]][]) {
-    if (locs.includes(location)) return district;
-  }
-  return "Neighborhood";
-}
 
 
 
@@ -191,21 +156,6 @@ function chaosSwing(difficulty: Difficulty, low: number, high: number) {
 
 
 
-function checkDistrictUnlocks(state: GameState, prog: number): { newDistricts: DistrictName[]; messages: string[] } {
-  const newDistricts: DistrictName[] = [];
-  const messages: string[] = [];
-  for (const district of districtCatalog) {
-    if (state.unlockedDistricts.includes(district.name)) continue;
-    const req = district.unlockRequirements;
-    if (req.communityTrust !== undefined && state.communityTrust < req.communityTrust) continue;
-    if (req.reputation !== undefined && state.reputation < req.reputation) continue;
-    if (req.completedRequests !== undefined && state.completedRequests < req.completedRequests) continue;
-    if (req.labProgress !== undefined && !progressMeets(prog, req.labProgress)) continue;
-    newDistricts.push(district.name);
-    messages.push(`[ DISTRICT UNLOCKED ] ${district.name}: ${district.unlockMessage}`);
-  }
-  return { newDistricts, messages };
-}
 
 
 
