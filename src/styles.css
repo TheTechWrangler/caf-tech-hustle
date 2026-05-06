@@ -1773,60 +1773,6 @@ h2 {
   }
 }
 
-/* Weekly Impact Reports */
-.weeklyReport .reportHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
-}
-
-.weeklyReport .reportHeader h2 {
-  font-size: 16px;
-  color: #ffd857;
-  letter-spacing: 0.06em;
-  margin: 0;
-}
-
-.weeklyReport .reportFlavor {
-  border-left: 3px solid #7ee7c8;
-  padding-left: 10px;
-  color: #c8d8f0;
-  font-style: italic;
-  margin: 10px 0 14px;
-  font-size: 13px;
-}
-
-.reportGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.reportSection {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border: 1px solid #3a3a52;
-  padding: 10px;
-  background: #0f0f1a;
-}
-
-.reportSection strong {
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: #ffd857;
-  border-bottom: 1px solid #3a3a52;
-  padding-bottom: 4px;
-  margin-bottom: 4px;
-}
-
-.reportSection span {
-  font-size: 12px;
-  color: #c8d8f0;
-}
-
 .historyReportCard span {
   font-size: 11px;
   color: #aeb7d3;

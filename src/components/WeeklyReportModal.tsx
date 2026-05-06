@@ -1,4 +1,5 @@
 import type { WeeklyReport } from "../types";
+import "./WeeklyReportModal.css";
 
 export function WeeklyReportModal({ report, onClose }: { report: WeeklyReport; onClose: () => void }) {
   const net = report.cashEarned - report.cashSpent;
