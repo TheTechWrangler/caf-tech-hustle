@@ -1,5 +1,6 @@
 import React from "react";
 import type { DailyUpdateData } from "../types";
+import "./DailyUpdateModal.css";
 
 interface DailyUpdateModalProps {
   data: DailyUpdateData;
