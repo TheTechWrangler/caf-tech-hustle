@@ -1,5 +1,6 @@
 import { HeartHandshake } from "lucide-react";
 import type { GameState, GrantDefinition, StorageStatus } from "../types";
+import "./GrantsPanel.css";
 import { statusClass } from "../utils";
 import { grantStateFor } from "../gameHelpers";
 import { grantCatalog } from "../data";

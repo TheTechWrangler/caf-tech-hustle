@@ -1,0 +1,44 @@
+.grantsPanel {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  margin-bottom: 10px;
+}
+
+.grantList {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.grantCard {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid #61637c;
+  background: #232538;
+}
+
+.grantCard > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.grantCard > div:first-child span {
+  color: #ffd857;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.grantGood {
+  color: #83ff8f !important;
+}
+
+.grantBad {
+  color: #ffb0c4 !important;
+}
