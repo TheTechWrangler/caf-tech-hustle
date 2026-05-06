@@ -93,7 +93,9 @@ import {
   infrastructureItemTypesNeeded,
   labStationDefinition, labCapReason, infrastructureCapReason,
   usableForLab, availableLabItems, matchingStorageForTypes,
-  requirementLabels, infrastructureUnlocked
+  requirementLabels, infrastructureUnlocked,
+  donationDestinationsForItem, futureDonationDestinationsForItem,
+  itemOperationTags, demandMatchesItem
 } from "./gameHelpers";
 import {
   isRecord, asNumber,
@@ -123,7 +125,8 @@ import {
   isBulkEligible, isPartsLotEligible, bulkLotEligibleItems,
   activeItemCount, intakeBacklogCount, eligibleStatusOptions, matchingItems,
   canDonateItem, cleanButtonReason, testButtonReason, donateButtonReason,
-  sellButtonReason, scrapButtonReason
+  sellButtonReason, scrapButtonReason,
+  isReservedStorageItem, stableStorageItemsForDisplay, bulkLotForItem
 } from "./inventoryHelpers";
 import { rollDonationTier, hiddenConditionFor, generateSurpriseDonation, donationConditionToStatus } from "./donationHelpers";
 import { grantApprovalChance, grantPayout, approvedGrantMessage, rejectedGrantMessage, processGrantDay } from "./grantHelpers";
@@ -349,125 +352,6 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
 }
 
 
-function donationDestinationsForItem(state: GameState, item: InventoryItem): DonationDestination[] {
-  if (!canDonateItem(item) || isInactiveStatus(item.status)) return [];
-  const requestDestinations: DonationDestination[] = state.requests
-    .filter((request) => request.kind === "item" && request.need === item.type && isReadyStatus(item.status))
-    .map((request) => ({
-      id: `request:${request.id}`,
-      label: `Donate to ${request.district ?? "Community"} Request: ${request.title}`,
-      kind: "request" as const,
-      request
-    }));
-  const labDestinations: DonationDestination[] = labStationCatalog
-    .filter((station) => (state.labStations[station.name] ?? 0) < station.maxLevel && station.acceptedTypes.includes(item.type) && usableForLab(item) && !labCapReason(state, station.name))
-    .map((station) => ({
-      id: `lab:${station.name}`,
-      label: `Donate to Lab: ${station.name}`,
-      kind: "lab" as const,
-      station
-    }));
-  const infrastructureDestinations: DonationDestination[] = infrastructureCatalog
-    .filter((facility) =>
-      (state.ownedInfrastructure[facility.name] ?? 0) < facility.maxLevel &&
-      infrastructureUnlocked(state, facility) &&
-      !infrastructureCapReason(state, facility.name) &&
-      infrastructureItemTypesNeeded(facility).some((need) => need.types.includes(item.type)) &&
-      usableForLab(item)
-    )
-    .map((facility) => ({
-      id: `infra:${facility.name}`,
-      label: `Donate to Infrastructure: ${facility.name}`,
-      kind: "infrastructure" as const,
-      facility
-    }));
-  const hostingDestinations: DonationDestination[] = hostingProjectCatalog
-    .filter((project) => {
-      const availability = hostingProjectAvailability(state, project);
-      return hostingProjectStateFor(state, project.id).status === "Inactive" &&
-        availability.canComplete &&
-        availability.equipment.some((equipment) => equipment.id === item.id);
-    })
-    .map((project) => ({
-      id: `hosting:${project.id}`,
-      label: `Donate to Hosting: ${project.name}`,
-      kind: "hosting" as const,
-      project
-    }));
-  const bulkDestination: DonationDestination[] = [...bulkLotGroups, mixedBulkLot]
-    .filter((lot) => bulkLotEligibleItems([item], { ...lot, minItems: 1 }).length > 0)
-    .map((lot) => ({
-      id: `bulk:${lot.label}`,
-      label: `Add to Bulk Buy: ${lot.label}`,
-      kind: "bulk" as const,
-      lot
-    }));
-  return [...requestDestinations, ...labDestinations, ...infrastructureDestinations, ...hostingDestinations, ...bulkDestination];
-}
-
-function futureDonationDestinationsForItem(state: GameState, item: InventoryItem): FutureDonationDestination[] {
-  if (!canDonateItem(item) || isInactiveStatus(item.status)) return [];
-  const active = donationDestinationsForItem(state, item);
-  const activeKeys = new Set(active.map((destination) => destination.id));
-  const future: FutureDonationDestination[] = [];
-  labStationCatalog.forEach((station) => {
-    if (!station.acceptedTypes.includes(item.type) || !usableForLab(item) || activeKeys.has(`lab:${station.name}`)) return;
-    const level = state.labStations[station.name] ?? 0;
-    if (level >= station.maxLevel) return;
-    future.push({
-      id: `future-lab:${station.name}`,
-      label: `Future Need: Lab - ${station.name}`,
-      category: "Lab",
-      reason: labCapReason(state, station.name) || "Lab need is not active yet."
-    });
-  });
-  infrastructureCatalog.forEach((facility) => {
-    if (!infrastructureItemTypesNeeded(facility).some((need) => need.types.includes(item.type)) || !usableForLab(item) || activeKeys.has(`infra:${facility.name}`)) return;
-    const level = state.ownedInfrastructure[facility.name] ?? 0;
-    if (level >= facility.maxLevel) return;
-    const capReason = infrastructureCapReason(state, facility.name);
-    const reqs = requirementLabels(facility.requirements).join(" | ");
-    future.push({
-      id: `future-infra:${facility.name}`,
-      label: `Future Need: Infrastructure - ${facility.name}`,
-      category: "Infrastructure",
-      reason: capReason || (!infrastructureUnlocked(state, facility) ? `Locked: ${reqs || "meet Infrastructure requirements first"}` : "Infrastructure need is not active yet.")
-    });
-  });
-  hostingProjectCatalog.forEach((project) => {
-    if (!project.requiredEquipment.some((need) => need.types.includes(item.type)) || !usableForHosting(item) || activeKeys.has(`hosting:${project.id}`)) return;
-    const status = hostingProjectStateFor(state, project.id).status;
-    if (status === "Active" || status === "Completed") return;
-    const availability = hostingProjectAvailability(state, project);
-    future.push({
-      id: `future-hosting:${project.id}`,
-      label: `Future Need: Hosting - ${project.name}`,
-      category: "Hosting",
-      reason: availability.missing || hostingSlotUnlockText(state)
-    });
-  });
-  const activeRequestForType = active.some((destination) => destination.kind === "request");
-  if (!activeRequestForType && requestTemplates.some((request) => request.kind === "item" && request.need === item.type)) {
-    future.push({
-      id: `future-request:${item.type}`,
-      label: `Future Need: Request - ${item.type}`,
-      category: "Request",
-      reason: "No active named request currently accepts this item."
-    });
-  }
-  return future.filter((entry, index, entries) => entries.findIndex((candidate) => candidate.id === entry.id) === index);
-}
-
-function isReservedStorageItem(item: InventoryItem) {
-  return item.status === "Reserved" || item.status === "Assigned to Lab" || item.source?.startsWith("Bulk Buy:");
-}
-
-function stableStorageItemsForDisplay(items: InventoryItem[]) {
-  return [
-    ...items.filter((item) => !isReservedStorageItem(item)),
-    ...items.filter(isReservedStorageItem)
-  ];
-}
 
 
 function App() {
@@ -2443,34 +2327,6 @@ function App() {
 }
 
 
-function itemOperationTags(item: InventoryItem, game: GameState) {
-  const tags: string[] = [];
-  const donationDestinations = donationDestinationsForItem(game, item);
-  const futureDestinations = futureDonationDestinationsForItem(game, item);
-  const reservedBulk = item.status === "Reserved" && item.source?.startsWith("Bulk Buy:");
-  const hasActiveLab = donationDestinations.some((destination) => destination.kind === "lab");
-  const hasActiveInfrastructure = donationDestinations.some((destination) => destination.kind === "infrastructure");
-  const hasActiveHosting = donationDestinations.some((destination) => destination.kind === "hosting");
-  const hasActiveBulk = donationDestinations.some((destination) => destination.kind === "bulk");
-  const hasSpecificDonation = donationDestinations.some((destination) => destination.kind === "request");
-  if (canDonateItem(item)) tags.push(hasSpecificDonation ? "Specific Donation" : "General Donate");
-  if (hasSpecificDonation && donationDestinations.some((destination) => destination.kind === "request" && destination.request.district === "Schools")) tags.push("School Donation");
-  if (hasActiveLab) tags.push("Lab");
-  if (hasActiveInfrastructure) tags.push("Infrastructure");
-  if (hasActiveHosting) tags.push("Hosting");
-  if (reservedBulk) tags.push("Committed to Bulk Buy");
-  if (isBusinessSaleEligible(item)) tags.push("Business Sale");
-  if (hasActiveBulk) tags.push("Bulk Buy");
-  if (item.status === "Reserved") tags.push("Reserved");
-  if (item.status === "Assigned to Lab") tags.push("Assigned");
-  if (futureDestinations.length) tags.push("Future Need");
-  if (futureDestinations.length && !donationDestinations.length) tags.push("Locked Need");
-  return [...new Set(tags)];
-}
-
-function bulkLotForItem(item: InventoryItem) {
-  return [...bulkLotGroups, mixedBulkLot].find((lot) => bulkLotEligibleItems([item], { ...lot, minItems: 1 }).length > 0) ?? null;
-}
 
 function storageOperationPriority(item: InventoryItem, game: GameState) {
   if (isReservedStorageItem(item)) return 90;
@@ -2486,28 +2342,6 @@ function storageOperationPriority(item: InventoryItem, game: GameState) {
   return 5;
 }
 
-function demandMatchesItem(item: InventoryItem, demand: string | null, game: GameState) {
-  if (!demand) return false;
-  if (demand === "business") return isBusinessSaleEligible(item);
-  if (demand.startsWith("bulk:")) {
-    const label = demand.slice(5);
-    const lot = [...bulkLotGroups, mixedBulkLot].find((entry) => entry.label === label);
-    return lot ? bulkLotEligibleItems([item], { ...lot, minItems: 1 }).length > 0 : false;
-  }
-  if (demand.startsWith("lab:")) {
-    const station = labStationDefinition(demand.slice(4) as LabStationName);
-    return availableLabItems(game, station).some((candidate) => candidate.id === item.id);
-  }
-  if (demand.startsWith("infra:")) {
-    const facility = infrastructureCatalog.find((entry) => entry.name === demand.slice(6));
-    return Boolean(facility && infrastructureItemTypesNeeded(facility).some((need) => need.types.includes(item.type)) && usableForLab(item));
-  }
-  if (demand.startsWith("hosting:")) {
-    const project = hostingProjectCatalog.find((entry) => entry.id === demand.slice(8));
-    return Boolean(project && project.requiredEquipment.some((need) => need.types.includes(item.type)) && usableForHosting(item));
-  }
-  return false;
-}
 
 
 function resizeLayoutPair(values: [number, number, number], leftIndex: number, rightIndex: number, delta: number, min: number): [number, number, number] {

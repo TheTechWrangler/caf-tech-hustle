@@ -3,6 +3,7 @@ import { readyStatuses, intakeBacklogStatuses } from "./constants";
 import { isInactiveStatus, isReadyStatus, isItemType, clampStat, conditionFromStatus } from "./utils";
 import { itemFairValue } from "./gameHelpers";
 import { itemQuality } from "./repairHelpers";
+import { bulkLotGroups, mixedBulkLot } from "./data";
 
 export function sellOfferValue(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">): number {
   const fair = itemFairValue(item);
@@ -128,5 +129,20 @@ export function scrapButtonReason(item: InventoryItem): string {
   if (item.status === "Scrapped") return "Already scrapped.";
   if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
   return "Scrap for parts cash.";
+}
+
+export function isReservedStorageItem(item: InventoryItem) {
+  return item.status === "Reserved" || item.status === "Assigned to Lab" || item.source?.startsWith("Bulk Buy:");
+}
+
+export function stableStorageItemsForDisplay(items: InventoryItem[]) {
+  return [
+    ...items.filter((item) => !isReservedStorageItem(item)),
+    ...items.filter(isReservedStorageItem)
+  ];
+}
+
+export function bulkLotForItem(item: InventoryItem) {
+  return [...bulkLotGroups, mixedBulkLot].find((lot) => bulkLotEligibleItems([item], { ...lot, minItems: 1 }).length > 0) ?? null;
 }
 
