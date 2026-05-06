@@ -112,7 +112,14 @@ import {
   readSaveSlots, readDailyAutosave
 } from "./gameStatePersistence";
 import { ledgerEntryFor, ensureLedgerDay, withCashChange, startLedgerDay } from "./ledgerHelpers";
-import { itemQuality, businessOfferForItem, businessSaleValue, repairJunkChance, cleanTestDestroyChance, repairNumbers } from "./repairHelpers";
+import { itemQuality, businessOfferForItem, businessSaleValue, repairJunkChance, cleanTestDestroyChance, repairNumbers, repairButtonReason } from "./repairHelpers";
+import {
+  sellOfferValue, bulkItemValue, businessSaleReason, isBusinessSaleEligible,
+  isBulkEligible, isPartsLotEligible, bulkLotEligibleItems,
+  activeItemCount, intakeBacklogCount, eligibleStatusOptions, matchingItems,
+  canDonateItem, cleanButtonReason, testButtonReason, donateButtonReason,
+  sellButtonReason, scrapButtonReason
+} from "./inventoryHelpers";
 import { rollDonationTier, hiddenConditionFor, generateSurpriseDonation, donationConditionToStatus } from "./donationHelpers";
 import { grantApprovalChance, grantPayout, approvedGrantMessage, rejectedGrantMessage, processGrantDay } from "./grantHelpers";
 import { loanRequirementLabels, activeLoanCountByType, loanUnlocked, effectiveLoanInterest, nextLoanDueDay, createLoan } from "./loanHelpers";
@@ -160,67 +167,6 @@ function chaosSwing(difficulty: Difficulty, low: number, high: number) {
 
 
 
-function sellOfferValue(item: InventoryItem, state: Pick<GameState, "reputation" | "communityTrust" | "difficulty">) {
-  const fair = itemFairValue(item);
-  const difficultyBump = state.difficulty === "Easy" ? 0.02 : state.difficulty === "Hard" ? -0.06 : state.difficulty === "Chaos Mode" ? 0 : 0;
-  const trustBump = Math.min(0.1, (state.reputation + state.communityTrust) / 620);
-  const readyBump = item.status === "Ready to Sell" ? 0.02 : item.status === "Ready to Donate" ? -0.08 : -0.12;
-  return Math.max(1, Math.round(fair * clampStat(0.82 + difficultyBump + trustBump + readyBump, 0.75, 0.95)));
-}
-
-
-
-// Bulk Buyers: lower per-item value than Business Sales, but only for lots.
-// Parts lots can absorb needs-repair gear; normal lots want processed, sellable items.
-function bulkItemValue(item: InventoryItem): number {
-  const fair = itemFairValue(item);
-  const factor = item.status === "Ready to Sell" || item.condition === "Refurbished" ? 0.85 : item.status === "Needs Repair" ? 0.65 : 0.74;
-  return Math.max(1, Math.round(fair * factor));
-}
-
-function businessSaleReason(item: InventoryItem): string {
-  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
-  if (isInactiveStatus(item.status)) return `This item is already ${item.status}.`;
-  if (item.status !== "Ready to Sell" && item.status !== "Tested") return "Business buyers only want cleaned and tested ready items.";
-  const condition = item.condition ?? conditionFromStatus(item.status);
-  if (condition === "Broken" || condition === "Needs Parts" || condition === "Unknown") return "Use Bulk Buyers or Scrap for lower-quality items.";
-  const quality = itemQuality(item);
-  if (quality === "Poor") return "Use Bulk Buyers or Scrap for lower-quality items.";
-  return "Ready for Business Sales.";
-}
-
-// Items eligible for Business Sales: cleaned, tested, business-ready single items.
-function isBusinessSaleEligible(item: InventoryItem): boolean {
-  return businessSaleReason(item) === "Ready for Business Sales.";
-}
-
-// Items eligible for normal Bulk Buyers lots: processed and sellable.
-function isBulkEligible(item: InventoryItem): boolean {
-  return item.status === "Tested" || item.status === "Ready to Sell" || item.status === "Ready to Donate";
-}
-
-function isPartsLotEligible(item: InventoryItem): boolean {
-  return isBulkEligible(item) || item.status === "Needs Repair";
-}
-
-
-
-function bulkLotEligibleItems(items: InventoryItem[], lot: BulkLotDefinition): InventoryItem[] {
-  return items.filter((item) => {
-    if (isInactiveStatus(item.status)) return false;
-    if (lot.types && !lot.types.includes(item.type)) return false;
-    return lot.partsOnly ? isPartsLotEligible(item) : isBulkEligible(item);
-  });
-}
-
-
-function activeItemCount(inventory: InventoryItem[]) {
-  return inventory.filter((item) => !isInactiveStatus(item.status)).length;
-}
-
-function intakeBacklogCount(inventory: InventoryItem[]) {
-  return inventory.filter((item) => intakeBacklogStatuses.includes(item.status)).length;
-}
 
 
 function labStationDefinition(name: LabStationName) {
@@ -491,18 +437,6 @@ function statusClass(status: StorageStatus) {
 
 
 
-function eligibleStatusOptions(item: InventoryItem): StorageStatus[] {
-  if (item.status === "Tested") return ["Tested", "Ready to Donate", "Ready to Sell", "Reserved"];
-  if (isReadyStatus(item.status)) return ["Ready to Donate", "Ready to Sell", "Reserved"];
-  return [item.status];
-}
-
-function matchingItems(state: GameState, request: CommunityRequest) {
-  if (request.kind !== "item" || !isItemType(request.need)) return [];
-  return state.inventory
-    .filter((item) => item.type === request.need && isReadyStatus(item.status))
-    .sort((a, b) => readyStatuses.indexOf(a.status) - readyStatuses.indexOf(b.status));
-}
 
 function requestAvailability(state: GameState, request: CommunityRequest) {
   if (request.kind === "item") {
@@ -529,54 +463,6 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
   };
 }
 
-function cleanButtonReason(item: InventoryItem, state: GameState) {
-  if (item.status === "Deployed to Community") return "This item is already deployed.";
-  if (item.status === "Assigned to Lab") return "This item is assigned to the lab.";
-  if (item.status === "Scrapped") return "Scrapped items cannot be cleaned.";
-  if (item.status !== "Incoming" && item.status !== "Needs Cleaning") return "Item is already cleaned.";
-  if (state.energy < 1) return "Not enough energy.";
-  return "Clean intake item. Uses 1 energy.";
-}
-
-function testButtonReason(item: InventoryItem, state: GameState) {
-  if (item.status === "Deployed to Community") return "This item is already deployed.";
-  if (item.status === "Assigned to Lab") return "This item is assigned to the lab.";
-  if (item.status === "Scrapped") return "Scrapped items cannot be tested.";
-  if (item.status === "Incoming" || item.status === "Needs Cleaning") return "Clean before testing.";
-  if (item.status !== "Cleaned") return "Item already tested.";
-  if (state.energy < 1) return "Not enough energy.";
-  return "Test cleaned item. Uses 1 energy.";
-}
-
-function repairButtonReason(item: InventoryItem, state: GameState, stats: ReturnType<typeof infrastructureStats>) {
-  if (item.status === "Deployed to Community") return "Already deployed.";
-  if (item.status === "Assigned to Lab") return "Assigned to lab.";
-  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
-  if (item.status === "Scrapped") return "Already scrapped.";
-  if (item.status === "Incoming" || item.status === "Needs Cleaning" || item.status === "Cleaned") return "Clean and test before repairing.";
-  if (item.status !== "Needs Repair") return "Item already repaired.";
-  if (state.repairsToday >= stats.repairQueue) return "No repair capacity left today.";
-  const cost = repairNumbers(item, state.labStations);
-  if (state.energy < cost.energy) return "Not enough energy.";
-  if (state.cash < cost.cash) return "Missing parts budget.";
-  return "Repairs use 1 repair slot and energy.";
-}
-
-function donateButtonReason(item: InventoryItem) {
-  if (item.status === "Deployed to Community") return "Already deployed.";
-  if (item.status === "Assigned to Lab") return "Assigned to lab.";
-  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
-  if (item.status === "Scrapped") return "Already scrapped.";
-  if (item.status === "Reserved") return "Already assigned.";
-  if (item.status === "Incoming" || item.status === "Needs Cleaning" || item.status === "Cleaned") return "Clean and test first.";
-  if (item.status === "Needs Repair") return "Repair before donating.";
-  if (item.status === "Tested" || isReadyStatus(item.status)) return "Donate to community.";
-  return "Repair before donating.";
-}
-
-function canDonateItem(item: InventoryItem) {
-  return item.status === "Tested" || item.status === "Ready to Donate" || item.status === "Ready to Sell";
-}
 
 function donationDestinationsForItem(state: GameState, item: InventoryItem): DonationDestination[] {
   if (!canDonateItem(item) || isInactiveStatus(item.status)) return [];
@@ -698,26 +584,6 @@ function stableStorageItemsForDisplay(items: InventoryItem[]) {
   ];
 }
 
-function sellButtonReason(item: InventoryItem) {
-  if (item.status === "Deployed to Community") return "Already deployed.";
-  if (item.status === "Assigned to Lab") return "Assigned to lab.";
-  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
-  if (item.status === "Scrapped") return "Already scrapped.";
-  if (item.status === "Incoming" || item.status === "Needs Cleaning" || item.status === "Cleaned") return "Clean and test first.";
-  if (item.status === "Needs Repair") return "Repair before selling.";
-  if (item.status === "Tested") return "Sell now (mark Ready to Sell first for better price).";
-  if (item.status === "Ready to Sell") return "Sell this item.";
-  if (item.status === "Ready to Donate" || item.status === "Reserved") return "Mark Ready to Sell first.";
-  return "Test before selling.";
-}
-
-function scrapButtonReason(item: InventoryItem) {
-  if (item.status === "Deployed to Community") return "Already deployed.";
-  if (item.status === "Assigned to Lab") return "Assigned to lab.";
-  if (item.status === "Scrapped") return "Already scrapped.";
-  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
-  return "Scrap for parts cash.";
-}
 
 function App() {
   const [game, setGame] = React.useState<GameState>(() => newGame());

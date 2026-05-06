@@ -1,6 +1,6 @@
 import type { InventoryItem, ItemQuality, ItemCondition, GameState, BusinessOffer, LabStationName } from "./types";
 import { CLEAN_TEST_DESTROY_CHANCE, HIGH_RISK_DESTROY_CHANCE } from "./constants";
-import { conditionFromStatus, actionEnergyCost, labBonuses, clampStat, stableRatio, rollFloatSeeded } from "./utils";
+import { conditionFromStatus, actionEnergyCost, labBonuses, clampStat, stableRatio, rollFloatSeeded, infrastructureStats } from "./utils";
 import { itemFairValue, itemResaleEstimate, isHighEndBusinessItem, deriveItemQuality } from "./gameHelpers";
 
 export function itemQuality(item: InventoryItem): ItemQuality {
@@ -88,4 +88,18 @@ export function repairNumbers(
     cash: Math.max(floor, rawCost),
     energy: actionEnergyCost(item.energy + (needsParts ? 1 : 0))
   };
+}
+
+export function repairButtonReason(item: InventoryItem, state: GameState, stats: ReturnType<typeof infrastructureStats>): string {
+  if (item.status === "Deployed to Community") return "Already deployed.";
+  if (item.status === "Assigned to Lab") return "Assigned to lab.";
+  if (item.status === "Junked") return "This item is permanently junked. Scrap it for parts.";
+  if (item.status === "Scrapped") return "Already scrapped.";
+  if (item.status === "Incoming" || item.status === "Needs Cleaning" || item.status === "Cleaned") return "Clean and test before repairing.";
+  if (item.status !== "Needs Repair") return "Item already repaired.";
+  if (state.repairsToday >= stats.repairQueue) return "No repair capacity left today.";
+  const cost = repairNumbers(item, state.labStations);
+  if (state.energy < cost.energy) return "Not enough energy.";
+  if (state.cash < cost.cash) return "Missing parts budget.";
+  return "Repairs use 1 repair slot and energy.";
 }
