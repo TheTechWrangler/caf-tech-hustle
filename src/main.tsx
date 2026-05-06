@@ -74,7 +74,8 @@ import {
   difficultyConfig,
   labBonuses, infrastructureStats, labProgress, infrastructureProgress,
   labTierInfo, infrastructureTierInfo, mapUpgradePhase,
-  maxEnergyFor, energyStackCapFor, dailyEnergyGainFor, dailyEnergyFor
+  maxEnergyFor, energyStackCapFor, dailyEnergyGainFor, dailyEnergyFor,
+  statusClass
 } from "./utils";
 import {
   baseResaleValue, fairMarketValue, expectedResaleValue, itemFairValue, itemResaleEstimate,
@@ -138,6 +139,7 @@ import { WeeklyReportModal } from "./components/WeeklyReportModal";
 import { LedgerModal } from "./components/LedgerModal";
 import { ReportHistoryModal } from "./components/ReportHistoryModal";
 import { DonationChoiceModal } from "./components/DonationChoiceModal";
+import { GrantsPanel } from "./components/GrantsPanel";
 
 
 
@@ -424,9 +426,6 @@ function newGame(difficulty: Difficulty = "Normal"): GameState {
   };
 }
 
-function statusClass(status: StorageStatus) {
-  return status.toLowerCase().replace(/\s+/g, "-");
-}
 
 
 
@@ -3260,46 +3259,6 @@ function LoansPanel({
   );
 }
 
-function GrantsPanel({
-  game,
-  onApply
-}: {
-  game: GameState;
-  onApply: (grant: GrantDefinition) => void;
-}) {
-  return (
-    <section className="grantsPanel">
-      <PanelTitle heading={<><HeartHandshake size={19} /> Grants</>} sub="Funding applications" />
-      <div className="grantList">
-        {grantCatalog.map((grant) => {
-          const state = grantStateFor(game, grant.id);
-          const pending = state.status === "Pending Review";
-          const cooling = state.cooldownRemaining > 0 && !pending;
-          const available = !pending && !cooling;
-          return (
-            <article className={`grantCard ${statusClass(state.status as StorageStatus)}`} key={grant.id}>
-              <div>
-                <strong>{grant.name}</strong>
-                <span>{state.status}{pending ? ` (${state.daysRemaining}d)` : cooling ? ` (${state.cooldownRemaining}d)` : ""}</span>
-              </div>
-              <p>{grant.description}</p>
-              <div className="requestMeta">
-                <span>${grant.payoutRange[0]}-${grant.payoutRange[1]}</span>
-                <span>Review {grant.reviewDays}d</span>
-                <span>Cooldown {grant.cooldownDays}d</span>
-              </div>
-              <small>{grant.guidance}</small>
-              {state.lastMessage ? <small className={state.lastResult === "Approved" ? "grantGood" : "grantBad"}>{state.lastMessage}</small> : null}
-              <button onClick={() => onApply(grant)} disabled={!available}>
-                {pending ? "Pending" : cooling ? "Cooling Down" : "Apply"}
-              </button>
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
 
 function SavesPanel({
   game,

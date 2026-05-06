@@ -409,3 +409,7 @@ export function dailyEnergyGainFor(state: Pick<GameState, "difficulty" | "ownedI
 export function dailyEnergyFor(state: Pick<GameState, "difficulty" | "ownedInfrastructure" | "stress" | "energy"> & { labStations?: Record<LabStationName, number> }) {
   return clampStat(state.energy + dailyEnergyGainFor(state), 0, energyStackCapFor(state));
 }
+
+export function statusClass(status: StorageStatus): string {
+  return status.toLowerCase().replace(/\s+/g, "-");
+}
