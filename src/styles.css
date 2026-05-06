@@ -1583,12 +1583,6 @@ h2 {
   overflow-y: auto;
 }
 
-.ledgerPanel {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 .modalPanel .panelTitle {
   padding-right: 74px;
 }
@@ -1776,76 +1770,6 @@ h2 {
 .historyReportCard span {
   font-size: 11px;
   color: #aeb7d3;
-}
-
-.ledgerPanel h2 {
-  font-size: 16px;
-  color: #ffd857;
-  letter-spacing: 0.06em;
-}
-
-.ledgerIntro {
-  color: #aeb7d3;
-  font-size: 12px;
-  margin: 6px 0 12px;
-}
-
-.ledgerList {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.ledgerCard {
-  border: 1px solid #3a3a52;
-  background: #171724;
-  padding: 10px;
-}
-
-.ledgerHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.ledgerHeader strong {
-  color: #f7f2d6;
-  font-size: 13px;
-}
-
-.ledgerGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 6px;
-}
-
-.ledgerGrid span,
-.ledgerHeader span {
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.ledgerTransactions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed #3a3a52;
-}
-
-.ledgerTransactions span {
-  font-size: 11px;
-}
-
-.ledgerPositive {
-  color: #83ff8f;
-}
-
-.ledgerNegative {
-  color: #ffb0c4;
 }
 
 /* District System */

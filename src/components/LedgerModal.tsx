@@ -1,4 +1,5 @@
 import type { DailyLedgerEntry } from "../types";
+import "./LedgerModal.css";
 
 function exportLedgerTxt(rows: (DailyLedgerEntry & { endingCash: number })[]) {
   const sorted = [...rows].sort((a, b) => a.day - b.day);
