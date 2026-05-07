@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   BarChart2,
   Building2,
+  Cable,
   ClipboardList,
   CreditCard,
   Cpu,
@@ -11,9 +12,12 @@ import {
   Gift,
   HardDrive,
   HeartHandshake,
+  Laptop,
   Map as MapIcon,
+  Monitor,
   Package,
   Recycle,
+  Router,
   Save,
   Server,
   Shield,
@@ -21,6 +25,7 @@ import {
   ShoppingBag,
   Store,
   Trash2,
+  Workflow,
   Wrench,
   Zap
 } from "lucide-react";
@@ -360,6 +365,20 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
 
 
 
+
+function itemTypeIcon(type: string) {
+  const size = 22;
+  switch (type) {
+    case "Laptop": return <Laptop size={size} />;
+    case "Workstation": return <Monitor size={size} />;
+    case "Server": return <Server size={size} />;
+    case "Mini PC": return <Cpu size={size} />;
+    case "Storage": return <HardDrive size={size} />;
+    case "Cables": return <Cable size={size} />;
+    case "Network": return <Router size={size} />;
+    default: return <Package size={size} />;
+  }
+}
 
 function newPlayerGuidance(game: GameState): string {
   const readyCount = game.inventory.filter((i) => isReadyStatus(i.status)).length;
@@ -2048,30 +2067,28 @@ function App() {
                     const heat = { label: offer.pricing.dealLabel, className: offer.pricing.dealClassName };
                     const shopForBadges = shopForBadgesForOffer(offer, marketShopForNeeds);
                     return (
-                      <article className="itemCard" key={offer.id}>
-                        <div className="shopItemHeader">
-                          <strong>{offer.name}</strong>
-                          {shopForBadges.length ? (
-                            <div className="shopItemBadges">
-                              {shopForBadges.map((badge) => (
-                                <span className={`shopNeedBadge ${badge === "Request Need" ? "request" : badge === "Lab Need" ? "lab" : "buyer"}`} key={badge}>
-                                  {badge}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
+                      <article className={`marketCard ${offer.pricing.dealClassName}`} key={offer.id}>
+                        <div className="marketCardTop">
+                          <div className="marketCardIcon">{itemTypeIcon(offer.type)}</div>
+                          <div className="marketCardBadges">
+                            <span className={`marketDealBadge ${heat.className}`}>{heat.label}</span>
+                            {shopForBadges.map((badge) => (
+                              <span className={`shopNeedBadge ${badge === "Request Need" ? "request" : badge === "Lab Need" ? "lab" : "buyer"}`} key={badge}>
+                                {badge}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <span>{offer.condition}</span>
-                        <p>Buy ${offer.price}</p>
-                        <div className="itemEconomics shopEconomics">
-                          <span>Fair: ${fair}</span>
-                          <span>Resale Estimate: ${resale}</span>
-                          <span>Potential Profit: {profit >= 0 ? "+" : "-"}${Math.abs(profit)}</span>
+                        <strong className="marketCardName">{offer.name}</strong>
+                        <span className="marketCardCond">{offer.type} · {offer.condition}</span>
+                        <p className="marketCardPrice">${offer.price}</p>
+                        <div className="marketCardMeta">
+                          <span>Fair ${fair}</span>
+                          <span className={profit >= 0 ? "profitPos" : "profitNeg"}>
+                            {profit >= 0 ? "+" : "-"}${Math.abs(profit)}
+                          </span>
                         </div>
-                        <span className={`priceHeat ${heat.className}`}>
-                          {`${heat.label} | Buy: $${offer.price} | Fair: $${fair} | ${priceDifferenceText(offer.price, fair)}`}
-                        </span>
-                        <button onClick={() => buy(offer)}>Buy</button>
+                        <button onClick={() => buy(offer)} className="buyBtn">{`Buy $${offer.price}`}</button>
                       </article>
                     );
                   })}
@@ -2239,10 +2256,10 @@ function App() {
                     <div className="rowActions">
                       <button onClick={() => cleanItem(item)} disabled={!canClean || cleanReason !== "Clean intake item. Uses 1 energy."} title={cleanReason}>Clean</button>
                       <button onClick={() => testItem(item)} disabled={!canTest || testReason !== "Test cleaned item. Uses 1 energy."} title={testReason}>Test</button>
-                      <button onClick={() => repair(item)} disabled={!canRepair || repairReason !== "Repairs use 1 repair slot and energy."} title={repairReason}>Repair</button>
-                      <button onClick={() => setDonationItemId(item.id)} title={donateReason}>Donate</button>
-                      <button onClick={() => sell(item)} disabled={item.status !== "Ready to Sell" && item.status !== "Tested"} title={sellReason}>{`Sell $${sellOffer}`}</button>
-                      <button onClick={() => scrap(item)} disabled={isInactiveStatus(item.status)} title={scrapReason}>Scrap</button>
+                      <button onClick={() => repair(item)} className="rowPrimary" disabled={!canRepair || repairReason !== "Repairs use 1 repair slot and energy."} title={repairReason}>Repair</button>
+                      <button onClick={() => setDonationItemId(item.id)} className="rowDonate" title={donateReason}>Donate</button>
+                      <button onClick={() => sell(item)} className="rowSell" disabled={item.status !== "Ready to Sell" && item.status !== "Tested"} title={sellReason}>{`Sell $${sellOffer}`}</button>
+                      <button onClick={() => scrap(item)} className="rowScrap" disabled={isInactiveStatus(item.status)} title={scrapReason}>Scrap</button>
                     </div>
                   </article>
                 );

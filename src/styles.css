@@ -505,8 +505,8 @@ h2 {
 
 .offerGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
 }
 
 .marketBody {
@@ -642,6 +642,107 @@ h2 {
   min-width: 0;
 }
 
+/* Market shop/loot cards */
+.marketCard {
+  padding: 12px;
+  border: 2px solid #61637c;
+  border-radius: 8px;
+  background: #1a1c2e;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 2px 2px 0 #05050a;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.marketCard:hover {
+  border-color: #7ee7c8;
+  box-shadow: 0 0 12px rgba(126, 231, 200, 0.12), 2px 2px 0 #05050a;
+}
+
+.marketCard.great { border-color: #83ff8f; box-shadow: 0 0 10px rgba(131, 255, 143, 0.1), 2px 2px 0 #05050a; }
+.marketCard.good { border-color: #7ee7c8; }
+.marketCard.fair { border-color: #ffd857; }
+.marketCard.bad { border-color: #d04c71; }
+
+.marketCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.marketCardIcon {
+  color: #7ee7c8;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.marketCardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: flex-end;
+}
+
+.marketDealBadge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.marketDealBadge.great,
+.marketDealBadge.good { color: #83ff8f; background: rgba(131, 255, 143, 0.1); border: 1px solid rgba(131, 255, 143, 0.3); }
+.marketDealBadge.fair { color: #ffd857; background: rgba(255, 216, 87, 0.1); border: 1px solid rgba(255, 216, 87, 0.3); }
+.marketDealBadge.bad { color: #ffb0c4; background: rgba(208, 76, 113, 0.1); border: 1px solid rgba(255, 176, 196, 0.3); }
+
+.marketCardName {
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.marketCardCond {
+  color: #aeb7d3;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.marketCardPrice {
+  margin: 0;
+  color: #ffd857;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(255, 216, 87, 0.2);
+}
+
+.marketCardMeta {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #aeb7d3;
+}
+
+.profitPos { color: #83ff8f; }
+.profitNeg { color: #d04c71; }
+
+.marketCard .buyBtn {
+  margin-top: auto;
+  width: 100%;
+  text-align: center;
+}
+
+/* Hide old single-column itemCard */
+.itemCard {
+  display: none;
+}
+
 .shopItemBadges {
   display: flex;
   flex-wrap: wrap;
@@ -680,22 +781,15 @@ h2 {
 }
 
 .itemCard {
-  min-height: 0;
-  padding: 7px;
-  border: 1px solid #61637c;
-  background: #25263a;
-  display: grid;
-  gap: 3px;
+  display: none;
 }
 
-.itemCard strong,
 .inventoryRow strong,
 .requestCard strong,
 .summaryRow strong {
   color: #ffffff;
 }
 
-.itemCard span,
 .inventoryRow span,
 .itemEconomics span,
 .requestCard p {
@@ -704,11 +798,23 @@ h2 {
   font-weight: 800;
 }
 
-.itemCard p {
-  margin: 0;
-  color: #83ff8f;
-  font-size: 17px;
+
+
+.buyBtn {
+  justify-self: start;
+  min-width: 100px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 900;
+  background: #223818;
+  border-color: #83ff8f;
+  color: #83ff8f;
+  text-shadow: 0 0 6px rgba(131, 255, 143, 0.3);
+}
+
+.buyBtn:hover:not(:disabled) {
+  background: #2a4a1e;
+  box-shadow: 0 0 10px rgba(131, 255, 143, 0.2);
 }
 
 .priceHeat {
@@ -886,14 +992,14 @@ h2 {
 
 .statusChip {
   display: inline-flex;
-  min-height: 18px;
+  min-height: 20px;
   align-items: center;
-  padding: 1px 5px;
+  padding: 2px 7px;
   border: 1px solid #61637c;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #202234;
   color: #f7f2d6;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -969,7 +1075,20 @@ h2 {
 
 .inventoryRow {
   align-self: start;
+  border-left: 4px solid #61637c;
+  border-top: 1px solid #61637c;
+  border-right: 1px solid #61637c;
+  border-bottom: 1px solid #61637c;
 }
+
+.inventoryRow.incoming { border-color: #ffd857; border-left: 4px solid #ffd857; }
+.inventoryRow.needs-cleaning { border-color: #7ee7c8; border-left: 4px solid #7ee7c8; }
+.inventoryRow.cleaned { border-color: #7ee7c8; border-left: 4px solid #7ee7c8; }
+.inventoryRow.tested { border-color: #7ee7c8; border-left: 4px solid #7ee7c8; }
+.inventoryRow.ready-to-donate { border-color: #7ee7c8; border-left: 4px solid #7ee7c8; }
+.inventoryRow.ready-to-sell { border-color: #83ff8f; border-left: 4px solid #83ff8f; }
+.inventoryRow.needs-repair { border-color: #d04c71; border-left: 4px solid #d04c71; }
+.inventoryRow.junked { border-color: #ff5fa2; border-left: 4px solid #ff5fa2; }
 
 .itemHeader {
   display: grid;
@@ -987,6 +1106,7 @@ h2 {
 .itemHeader strong,
 .requestCard strong {
   overflow-wrap: anywhere;
+  font-size: 13px;
 }
 
 .itemEconomics {
@@ -996,23 +1116,55 @@ h2 {
 }
 
 .itemEconomics span:not(.priceHeat) {
-  padding: 2px 5px;
+  padding: 3px 6px;
   border: 1px solid #61637c;
   border-radius: 6px;
   background: #202234;
+  font-size: 11px;
 }
 
 .rowActions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
   gap: 5px;
 }
 
 .rowActions button {
-  padding: 5px 4px;
-  font-size: 10px;
+  padding: 6px 5px;
+  font-size: 11px;
+  font-weight: 900;
   box-shadow: 2px 2px 0 #05050a;
   min-height: 28px;
+}
+
+.rowActions button:not(:disabled):not(.rowPrimary) {
+  background: #25283c;
+  border-color: #61637c;
+  color: #aeb7d3;
+}
+
+.rowActions button:not(:disabled).rowPrimary {
+  background: #178c83;
+  border-color: #7ee7c8;
+  color: #ffffff;
+}
+
+.rowActions button:not(:disabled).rowSell {
+  background: #223818;
+  border-color: #83ff8f;
+  color: #83ff8f;
+}
+
+.rowActions button:not(:disabled).rowDonate {
+  background: #242015;
+  border-color: #ffd857;
+  color: #ffd857;
+}
+
+.rowActions button:not(:disabled).rowScrap {
+  background: #281820;
+  border-color: #d04c71;
+  color: #ffb0c4;
 }
 
 .rowActions button:disabled {
@@ -1023,8 +1175,12 @@ h2 {
 
 .repairHint {
   color: #ffd857;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: rgba(255, 216, 87, 0.08);
+  border: 1px solid rgba(255, 216, 87, 0.2);
 }
 
 .historyBox {
