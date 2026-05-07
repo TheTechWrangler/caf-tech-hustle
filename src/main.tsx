@@ -7,13 +7,19 @@ import {
   CreditCard,
   Cpu,
   DollarSign,
+  FlaskConical,
   Gift,
   HardDrive,
   HeartHandshake,
+  Map as MapIcon,
   Package,
   Recycle,
   Save,
+  Server,
+  Shield,
   ShieldCheck,
+  ShoppingBag,
+  Store,
   Trash2,
   Wrench,
   Zap
@@ -1742,15 +1748,27 @@ function App() {
       </section>
 
       <section className="screenNav" aria-label="Main screens">
-        {mainScreens.map((screen) => (
-          <button
-            key={screen}
-            className={mainScreen === screen ? "active" : ""}
-            onClick={() => selectMainScreen(screen)}
-          >
-            {screen}
-          </button>
-        ))}
+        {mainScreens.map((screen) => {
+          const screenIcons: Record<MainScreen, typeof Store> = {
+            Market: Store,
+            Operations: Wrench,
+            Hosting: Server,
+            Lab: FlaskConical,
+            Map: MapIcon,
+            Admin: Shield
+          };
+          const Icon = screenIcons[screen];
+          return (
+            <button
+              key={screen}
+              className={mainScreen === screen ? "active" : ""}
+              onClick={() => selectMainScreen(screen)}
+            >
+              <Icon size={16} />
+              {screen}
+            </button>
+          );
+        })}
       </section>
 
       <section className="contextStrip">
@@ -1835,6 +1853,7 @@ function App() {
               if (businessItems.length === 0) {
                 return (
                   <div className="emptyZone">
+                    <ShoppingBag size={28} />
                     <p>No business-ready single items. Business buyers only want cleaned, tested, Ready to Sell gear.</p>
                     <p>Premium buyers only want excellent/pristine high-end gear. Use Bulk Buyers or Scrap for lower-quality items.</p>
                     {ineligibleBusinessItems.length ? (
@@ -1898,6 +1917,7 @@ function App() {
               if (mixedItems.length === 0 && partsItems.length === 0) {
                 return (
                   <div className="emptyZone">
+                    <Recycle size={28} />
                     No processed items to sell in bulk. Test or repair items first.
                   </div>
                 );
@@ -2044,12 +2064,12 @@ function App() {
                         Scout for more deals
                       </button>
                     </div>
-                    <div className="emptyZone">Sold out for today. Restocks tomorrow.</div>
+                    <div className="emptyZone"><Package size={28} />Sold out for today. Restocks tomorrow.</div>
                   </div>
                   <ShopForPanel needs={marketShopForNeeds} />
                 </div>
               ) : (
-                <div className="emptyZone">{`Bring ready tech here to donate. Ready items: ${readyCount}.`}</div>
+                <div className="emptyZone"><HeartHandshake size={28} />{`Bring ready tech here to donate. Ready items: ${readyCount}.`}</div>
               )
             )}
           </div>
@@ -2083,7 +2103,7 @@ function App() {
           <PanelTitle heading={<><ClipboardList size={19} /> Requests Board</>} sub={`Week ${game.requestWeek}`} />
           <div className="requestList">
             {game.requests.length === 0 ? (
-              <div className="emptyZone">No active requests. New posts arrive next week.</div>
+              <div className="emptyZone"><ClipboardList size={28} />No active requests. New posts arrive next week.</div>
             ) : (
               game.requests.map((request) => {
                 const availability = requestAvailability(game, request);
@@ -2139,7 +2159,7 @@ function App() {
 
           <div className="inventoryList">
             {activeItems.length === 0 ? (
-              <div className="emptyZone">Storage is empty. Go hunt for tech bargains.</div>
+              <div className="emptyZone"><HardDrive size={28} />Storage is empty. Go hunt for tech bargains.</div>
             ) : (
               displayedActiveItems.map((item) => {
                 const fair = itemFairValue(item);

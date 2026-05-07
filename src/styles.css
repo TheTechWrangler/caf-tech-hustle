@@ -38,6 +38,7 @@ button {
   padding: 9px 11px;
   cursor: pointer;
   box-shadow: 3px 3px 0 #05050a;
+  transition: opacity 0.2s, background 0.15s, transform 0.1s, box-shadow 0.1s;
 }
 
 select {
@@ -1475,13 +1476,21 @@ h2 {
 
 .emptyZone {
   min-height: 110px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 16px;
   border: 2px dashed #61637c;
   color: #aeb7d3;
   text-align: center;
   font-weight: 800;
+}
+
+.emptyZone svg {
+  color: #ffd857;
+  opacity: 0.5;
 }
 
 .emptyZone.compact {
@@ -2118,16 +2127,24 @@ h2 {
 
 .screenNav {
   display: grid;
-  grid-template-columns: repeat(6, minmax(108px, 1fr));
+  grid-template-columns: repeat(6, minmax(98px, 1fr));
   gap: 8px;
   padding: 8px;
 }
 
 .screenNav button {
-  padding: 9px 12px;
-  font-size: 13px;
+  padding: 9px 5px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.screenNav button svg {
+  flex-shrink: 0;
 }
 
 .screenNav button.active {
