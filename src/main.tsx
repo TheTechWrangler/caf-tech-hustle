@@ -361,6 +361,25 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
 
 
 
+function newPlayerGuidance(game: GameState): string {
+  const readyCount = game.inventory.filter((i) => isReadyStatus(i.status)).length;
+  const needsTesting = game.inventory.some((i) => i.status === "Untested" || i.status === "Uncleaned");
+  const needsRepair = game.inventory.some((i) => i.status !== "Ready" && i.status !== "Scrapped" && i.status !== "Untested" && i.status !== "Uncleaned");
+  const canFulfill = game.requests.some((r) => requestAvailability(game, r).canFulfill);
+
+  if (game.day === 1 && game.inventory.length === 0)
+    return "Scout the Market for salvage tech, then repair it in Operations.";
+  if (needsTesting)
+    return "Test or clean items in Operations to reveal their condition.";
+  if (needsRepair)
+    return "Repair items in Operations to make them Ready for sale or donation.";
+  if (readyCount > 0)
+    return "You have Ready items — sell them for cash, or donate to build reputation and impact.";
+  if (canFulfill)
+    return "Fulfillable requests are available — check the Requests tab to help your community.";
+  return "Buy, repair, sell, donate. Repeat. Grow your nonprofit tech operation.";
+}
+
 function App() {
   const [game, setGame] = React.useState<GameState>(() => newGame());
   const [saveSlots, setSaveSlots] = React.useState<SaveSlot[]>(() => readSaveSlots(newGame));
@@ -1732,6 +1751,13 @@ function App() {
           <span className="saveToast">{saved}</span>
           <button onClick={nextDay} className="primary"><Zap size={18} /> Next Day</button>
         </div>
+        {(() => {
+          const readyItems = game.inventory.filter((i) => isReadyStatus(i.status)).length;
+          const canFulfill = game.requests.some((r) => requestAvailability(game, r).canFulfill);
+          if (canFulfill) return <span className="dayHint">⚠ Fulfillable requests pending — check Requests before ending the day.</span>;
+          if (readyItems > 0) return <span className="dayHint">Ready items available — sell or donate before ending the day.</span>;
+          return null;
+        })()}
       </section>
 
       <section className="stats">
@@ -1745,6 +1771,11 @@ function App() {
         <Stat icon={<Wrench />} label="Repairs" value={`${game.repairsToday}/${infraStats.repairQueue}`} />
         <Stat icon={<HardDrive />} label="Hosting" value={`${hostingUsed}/${infraStats.hostingCapacity}`} />
         <Stat icon={<Building2 />} label="Next Lab" value={`${labTier.progressToNext}%`} />
+      </section>
+
+      <section className="guidanceStrip">
+        <div className="guidanceLabel">CURRENT GOAL</div>
+        <div className="guidanceText">{newPlayerGuidance(game).replace("💡 ", "")}</div>
       </section>
 
       <section className="screenNav" aria-label="Main screens">
@@ -1854,8 +1885,8 @@ function App() {
                 return (
                   <div className="emptyZone">
                     <ShoppingBag size={28} />
-                    <p>No business-ready single items. Business buyers only want cleaned, tested, Ready to Sell gear.</p>
-                    <p>Premium buyers only want excellent/pristine high-end gear. Use Bulk Buyers or Scrap for lower-quality items.</p>
+                    <p>No business-ready items yet. → Test, clean, and repair gear in Operations first.</p>
+                    <p>Premium buyers want excellent/pristine high-end gear. Use Bulk Buyers or Scrap for lower-quality items.</p>
                     {ineligibleBusinessItems.length ? (
                       <div className="businessReasons">
                         {ineligibleBusinessItems.map(({ item, reason }) => (
@@ -2064,12 +2095,12 @@ function App() {
                         Scout for more deals
                       </button>
                     </div>
-                    <div className="emptyZone"><Package size={28} />Sold out for today. Restocks tomorrow.</div>
+                    <div className="emptyZone"><Package size={28} />Sold out for today. → End the day with Next Day to refresh the market.</div>
                   </div>
                   <ShopForPanel needs={marketShopForNeeds} />
                 </div>
               ) : (
-                <div className="emptyZone"><HeartHandshake size={28} />{`Bring ready tech here to donate. Ready items: ${readyCount}.`}</div>
+                <div className="emptyZone"><HeartHandshake size={28} />{`Items must be in Ready status to donate. → Test and repair gear in Operations. Ready: ${readyCount}.`}</div>
               )
             )}
           </div>
@@ -2103,7 +2134,7 @@ function App() {
           <PanelTitle heading={<><ClipboardList size={19} /> Requests Board</>} sub={`Week ${game.requestWeek}`} />
           <div className="requestList">
             {game.requests.length === 0 ? (
-              <div className="emptyZone"><ClipboardList size={28} />No active requests. New posts arrive next week.</div>
+              <div className="emptyZone"><ClipboardList size={28} />No active requests. → Requests earn reputation and unlock more community reach each week.</div>
             ) : (
               game.requests.map((request) => {
                 const availability = requestAvailability(game, request);
@@ -2159,7 +2190,7 @@ function App() {
 
           <div className="inventoryList">
             {activeItems.length === 0 ? (
-              <div className="emptyZone"><HardDrive size={28} />Storage is empty. Go hunt for tech bargains.</div>
+              <div className="emptyZone"><HardDrive size={28} />Storage is empty. → Go to Market to scout for deals.</div>
             ) : (
               displayedActiveItems.map((item) => {
                 const fair = itemFairValue(item);

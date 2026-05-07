@@ -181,6 +181,39 @@ h2 {
   font-size: 15px;
 }
 
+.guidanceStrip {
+  padding: 14px 16px;
+  border: 3px solid #7ee7c8;
+  background: linear-gradient(135deg, #0f1a1a 0%, #181722 100%);
+  box-shadow: 0 0 14px rgba(126, 231, 200, 0.18), 3px 3px 0 #05050a;
+  color: #7ee7c8;
+  text-align: center;
+}
+
+.guidanceLabel {
+  color: #ffd857;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.guidanceText {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.dayHint {
+  display: block;
+  color: #ffd857;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
 .locationStrip {
   display: flex;
   flex-direction: column;

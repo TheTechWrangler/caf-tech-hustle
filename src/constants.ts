@@ -123,7 +123,7 @@ export const difficultyConfigs: Record<Difficulty, {
   creditScore: number;
 }> = {
   Easy: {
-    startingCash: 175,
+    startingCash: 500,
     maxEnergy: 18,
     donationRate: 1.55,
     marketplacePrice: 0.9,
@@ -137,7 +137,7 @@ export const difficultyConfigs: Record<Difficulty, {
     creditScore: 78
   },
   Normal: {
-    startingCash: 100,
+    startingCash: 350,
     maxEnergy: 16,
     donationRate: 1,
     marketplacePrice: 1,
@@ -151,7 +151,7 @@ export const difficultyConfigs: Record<Difficulty, {
     creditScore: 70
   },
   Hard: {
-    startingCash: 65,
+    startingCash: 200,
     maxEnergy: 13,
     donationRate: 0.65,
     marketplacePrice: 1.2,
