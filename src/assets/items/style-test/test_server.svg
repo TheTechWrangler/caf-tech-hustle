@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="S_chassis" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#0d1527"/>
+    </linearGradient>
+    <linearGradient id="S_panel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2440"/>
+      <stop offset="100%" stop-color="#080f1e"/>
+    </linearGradient>
+    <linearGradient id="S_bay" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#111d35"/>
+      <stop offset="100%" stop-color="#070d1d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── CHASSIS BODY ── -->
+  <rect x="16" y="6" width="96" height="116" rx="6"
+    fill="url(#S_chassis)" stroke="#08111e" stroke-width="2.5"/>
+  <!-- Gold top cap accent -->
+  <rect x="16" y="6" width="96" height="6" rx="3"
+    fill="#ffd857" opacity="0.55"/>
+  <!-- Right edge bevel (depth illusion) -->
+  <rect x="108" y="6" width="4" height="116" rx="2"
+    fill="#1e2d4e" opacity="0.6"/>
+
+  <!-- ── FRONT PANEL ── -->
+  <rect x="22" y="16" width="84" height="96" rx="3"
+    fill="url(#S_panel)"/>
+  <!-- Cyan top panel accent line -->
+  <line x1="26" y1="20" x2="102" y2="20" stroke="#2ff8ef" stroke-width="1" opacity="0.45"/>
+
+  <!-- ── DRIVE BAY 1 ── (cyan LED active) -->
+  <rect x="26" y="24" width="76" height="18" rx="2"
+    fill="url(#S_bay)" stroke="#1a2844" stroke-width="1"/>
+  <rect x="30" y="27" width="56" height="12" rx="1.5" fill="#070d1d"/>
+  <!-- Activity bars -->
+  <rect x="32" y="29" width="14" height="2" rx="1" fill="#1e2d4e"/>
+  <rect x="32" y="33" width="9"  height="2" rx="1" fill="#1e2d4e"/>
+  <!-- LED glow -->
+  <circle cx="94" cy="33" r="6" fill="#2ff8ef" opacity="0.15"/>
+  <circle cx="94" cy="33" r="3.5" fill="#2ff8ef" opacity="0.95"/>
+
+  <!-- ── DRIVE BAY 2 ── (cyan LED active, dimmer) -->
+  <rect x="26" y="46" width="76" height="18" rx="2"
+    fill="url(#S_bay)" stroke="#1a2844" stroke-width="1"/>
+  <rect x="30" y="49" width="56" height="12" rx="1.5" fill="#070d1d"/>
+  <rect x="32" y="51" width="10" height="2" rx="1" fill="#1e2d4e"/>
+  <rect x="32" y="55" width="16" height="2" rx="1" fill="#1e2d4e"/>
+  <circle cx="94" cy="55" r="6"   fill="#2ff8ef" opacity="0.12"/>
+  <circle cx="94" cy="55" r="3.5" fill="#2ff8ef" opacity="0.7"/>
+
+  <!-- ── DRIVE BAY 3 ── (magenta LED – alert/write) -->
+  <rect x="26" y="68" width="76" height="18" rx="2"
+    fill="url(#S_bay)" stroke="#1a2844" stroke-width="1"/>
+  <rect x="30" y="71" width="56" height="12" rx="1.5" fill="#070d1d"/>
+  <rect x="32" y="73" width="12" height="2" rx="1" fill="#1e2d4e"/>
+  <rect x="32" y="77" width="7"  height="2" rx="1" fill="#1e2d4e"/>
+  <circle cx="94" cy="77" r="6"   fill="#ff5fa2" opacity="0.15"/>
+  <circle cx="94" cy="77" r="3.5" fill="#ff5fa2" opacity="0.9"/>
+
+  <!-- ── DRIVE BAY 4 ── (dark LED – idle) -->
+  <rect x="26" y="90" width="76" height="18" rx="2"
+    fill="url(#S_bay)" stroke="#1a2844" stroke-width="1"/>
+  <rect x="30" y="93" width="56" height="12" rx="1.5" fill="#070d1d"/>
+  <rect x="32" y="95" width="8"  height="2" rx="1" fill="#1e2d4e"/>
+  <rect x="32" y="99" width="12" height="2" rx="1" fill="#1e2d4e"/>
+  <circle cx="94" cy="99" r="3.5" fill="#1a2844" stroke="#253557" stroke-width="1"/>
+
+  <!-- ── BOTTOM STRIP: power + ports ── -->
+  <rect x="22" y="112" width="84" height="4" rx="2" fill="#070d1d"/>
+  <!-- Power LED: gold -->
+  <circle cx="32" cy="114" r="5"   fill="#ffd857" opacity="0.18"/>
+  <circle cx="32" cy="114" r="3"   fill="#ffd857" opacity="0.9"/>
+  <!-- Port slots -->
+  <rect x="42" y="112.5" width="7" height="3" rx="1" fill="#08111e"/>
+  <rect x="52" y="112.5" width="7" height="3" rx="1" fill="#08111e"/>
+  <rect x="62" y="112.5" width="7" height="3" rx="1" fill="#08111e"/>
+</svg>

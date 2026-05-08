@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="L_lid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="L_screen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#082040"/>
+      <stop offset="100%" stop-color="#030812"/>
+    </linearGradient>
+    <linearGradient id="L_deck" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e2d4e"/>
+      <stop offset="100%" stop-color="#0d1830"/>
+    </linearGradient>
+    <linearGradient id="L_base" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2844"/>
+      <stop offset="100%" stop-color="#0a1220"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── SCREEN LID ── -->
+  <!-- Outer lid: trapezoid, wider at bottom (hinge), narrower at top -->
+  <polygon points="26,14 102,14 112,66 16,66"
+    fill="url(#L_lid)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Lid inner bevel highlight -->
+  <polygon points="30,18 98,18 106,62 22,62"
+    fill="none" stroke="#253557" stroke-width="1.5"/>
+  <!-- Screen display -->
+  <polygon points="32,20 96,20 104,60 24,60"
+    fill="url(#L_screen)"/>
+  <!-- Cyan screen border – glow layer (behind sharp) -->
+  <polygon points="32,20 96,20 104,60 24,60"
+    fill="none" stroke="#2ff8ef" stroke-width="7" opacity="0.12"/>
+  <!-- Cyan screen border – sharp -->
+  <polygon points="32,20 96,20 104,60 24,60"
+    fill="none" stroke="#2ff8ef" stroke-width="1.5" opacity="0.9"/>
+
+  <!-- Screen content: 3 horizontal glowing lines -->
+  <line x1="36" y1="32" x2="100" y2="32" stroke="#2ff8ef" stroke-width="1.5" opacity="0.5"/>
+  <line x1="37" y1="40" x2="99" y2="40" stroke="#2ff8ef" stroke-width="1.2" opacity="0.3"/>
+  <line x1="38" y1="48" x2="92" y2="48" stroke="#2ff8ef" stroke-width="1" opacity="0.18"/>
+  <!-- Soft screen center glow -->
+  <ellipse cx="64" cy="40" rx="22" ry="14" fill="#2ff8ef" opacity="0.03"/>
+
+  <!-- Webcam dot top center of lid -->
+  <circle cx="64" cy="17" r="2" fill="#1a2844" stroke="#2ff8ef" stroke-width="0.8" opacity="0.7"/>
+
+  <!-- Magenta power LED at lid bottom-center -->
+  <circle cx="64" cy="63" r="2.5" fill="#ff5fa2" opacity="0.85"/>
+  <circle cx="64" cy="63" r="6"   fill="#ff5fa2" opacity="0.18"/>
+
+  <!-- ── HINGE ── -->
+  <rect x="16" y="64" width="96" height="5" rx="1.5"
+    fill="#0d1527" stroke="#08111e" stroke-width="1"/>
+  <!-- Gold hinge accent -->
+  <line x1="18" y1="67" x2="110" y2="67" stroke="#ffd857" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- ── KEYBOARD DECK ── (slight elevation perspective: wider at front) -->
+  <polygon points="14,69 114,69 120,98 8,98"
+    fill="url(#L_base)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Top surface (slightly lighter) -->
+  <polygon points="18,72 110,72 115,95 13,95"
+    fill="url(#L_deck)"/>
+
+  <!-- Key rows (foreshortened stripes, slightly wider as they approach viewer) -->
+  <polygon points="20,74 108,74 110,78 18,78" fill="#0a1527" rx="1"/>
+  <polygon points="19,80 109,80 111,84 17,84" fill="#0a1527"/>
+  <polygon points="18,86 110,86 112,90 16,90" fill="#0a1527"/>
+  <!-- Spacebar -->
+  <polygon points="38,91 90,91 91,94 37,94"   fill="#111d35" rx="1"/>
+
+  <!-- Gold accent line at top of deck -->
+  <line x1="14" y1="69" x2="114" y2="69" stroke="#ffd857" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- ── BOTTOM BEZEL ── -->
+  <polygon points="8,98 120,98 118,106 10,106"
+    fill="#0a1220" stroke="#08111e" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>

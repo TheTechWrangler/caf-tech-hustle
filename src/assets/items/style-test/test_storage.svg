@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="HDD_case" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="HDD_top" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2440"/>
+      <stop offset="100%" stop-color="#0d1830"/>
+    </linearGradient>
+    <radialGradient id="HDD_platter" cx="38%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#1e2d4e"/>
+      <stop offset="65%" stop-color="#111d35"/>
+      <stop offset="100%" stop-color="#070d1d"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ── CASE OUTER (mild 3/4 perspective from above) ── -->
+  <polygon points="14,14 114,14 116,84 12,84"
+    fill="url(#HDD_case)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Inner top surface -->
+  <polygon points="20,20 108,20 109,78 19,78"
+    fill="url(#HDD_top)"/>
+  <!-- Gold top edge accent -->
+  <line x1="14" y1="14" x2="114" y2="14" stroke="#ffd857" stroke-width="1.5" opacity="0.52"/>
+
+  <!-- ── PLATTER CIRCLE (dominant feature, reads as HDD immediately) ── -->
+  <!-- Platter outer glow -->
+  <circle cx="58" cy="47" r="31" fill="none" stroke="#2ff8ef" stroke-width="6" opacity="0.1"/>
+  <!-- Platter disk -->
+  <circle cx="58" cy="47" r="28" fill="url(#HDD_platter)" stroke="#253557" stroke-width="1.5"/>
+  <!-- Track rings (concentric, subtle) -->
+  <circle cx="58" cy="47" r="22" fill="none" stroke="#2ff8ef" stroke-width="0.8" opacity="0.3"/>
+  <circle cx="58" cy="47" r="14" fill="none" stroke="#2ff8ef" stroke-width="0.8" opacity="0.22"/>
+  <!-- Center hub -->
+  <circle cx="58" cy="47" r="7"  fill="#111d35" stroke="#1e2d4e" stroke-width="1.5"/>
+  <circle cx="58" cy="47" r="3.5" fill="#253557"/>
+
+  <!-- ── READ/WRITE ARM ── -->
+  <!-- Pivot mount (upper-right corner area) -->
+  <circle cx="97" cy="26" r="6"   fill="#253557" stroke="#08111e" stroke-width="1.5"/>
+  <circle cx="97" cy="26" r="3"   fill="#1a2844"/>
+  <!-- Arm body (thin tapered shape from pivot to read head) -->
+  <polygon points="94,22 100,22 70,55 64,55"
+    fill="#1e2d4e" stroke="#08111e" stroke-width="1"/>
+  <!-- Read head: magenta glow -->
+  <circle cx="67" cy="55" r="6"   fill="#ff5fa2" opacity="0.14"/>
+  <circle cx="67" cy="55" r="3"   fill="#ff5fa2" opacity="0.9"/>
+
+  <!-- ── SATA CONNECTOR AREA (right side of top face) ── -->
+  <rect x="96" y="55" width="12" height="20" rx="1.5"
+    fill="#0d1527" stroke="#1a2844" stroke-width="0.8"/>
+  <!-- Gold contact pins -->
+  <rect x="98" y="57" width="3.5" height="16" rx="0.5" fill="#ffd857" opacity="0.7"/>
+  <rect x="104" y="57" width="3.5" height="16" rx="0.5" fill="#ffd857" opacity="0.5"/>
+
+  <!-- Corner screw holes (give hardware authenticity) -->
+  <circle cx="26" cy="26" r="3.5" fill="#070d1d" stroke="#1a2844" stroke-width="0.8"/>
+  <circle cx="102" cy="72" r="3.5" fill="#070d1d" stroke="#1a2844" stroke-width="0.8"/>
+
+  <!-- ── FRONT FACE STRIP ── -->
+  <polygon points="12,84 116,84 114,100 14,100"
+    fill="#0d1527" stroke="#08111e" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Cyan accent line at top of front face -->
+  <line x1="12" y1="84" x2="116" y2="84" stroke="#2ff8ef" stroke-width="0.8" opacity="0.32"/>
+  <!-- Activity LED: cyan -->
+  <circle cx="24" cy="92" r="4.5" fill="#2ff8ef" opacity="0.9"/>
+  <circle cx="24" cy="92" r="9"   fill="#2ff8ef" opacity="0.13"/>
+  <!-- Power LED: gold -->
+  <circle cx="38" cy="92" r="3.5" fill="#ffd857" opacity="0.85"/>
+  <circle cx="38" cy="92" r="7"   fill="#ffd857" opacity="0.13"/>
+</svg>

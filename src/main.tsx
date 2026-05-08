@@ -30,6 +30,7 @@ import {
   Zap
 } from "lucide-react";
 import "./styles.css";
+import { itemArt } from "./assets/itemArt";
 import type {
   ItemType, StorageStatus, LocationName, ServiceNeed, RequestNeed,
   DonationTier, DonationCondition, RevealedDonationCondition, ItemCondition,
@@ -367,6 +368,8 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
 
 
 function itemTypeIcon(type: string) {
+  const art = itemArt[type];
+  if (art) return <img src={art} alt={type} className="itemArtImg" />;
   const size = 22;
   switch (type) {
     case "Laptop": return <Laptop size={size} />;
@@ -2227,39 +2230,66 @@ function App() {
                 const scrapEstimate = scrapValue(item);
                 return (
                   <article className={`inventoryRow ${statusClass(item.status)}`} key={item.id}>
-                    <div className="itemHeader">
-                      <div>
-                        <strong>{item.name}</strong>
-                        <span>{item.condition ?? conditionFromStatus(item.status)} / {itemQuality(item)} / {item.status} | repair {repairCost.energy} energy / ${repairCost.cash}</span>
+                    <div className="invCardLayout">
+
+                      {/* Art zone */}
+                      <div className="invArtZone">
+                        {itemArt[item.type]
+                          ? <img src={itemArt[item.type]} alt={item.type} className="invArtThumb" />
+                          : <Package size={28} style={{ color: "var(--cyan)", opacity: 0.5 }} />}
                       </div>
-                      <span className={`statusPill ${statusClass(item.status)}`}>{item.status}</span>
-                    </div>
-                    <div className="itemEconomics">
-                      <span>{`Quick Sell: $${sellOffer}`}</span>
-                      <span>{`Fair: $${fair}`}</span>
-                      <span>{`Resale Estimate: $${resale}`}</span>
-                      <span>{`Scrap: $${scrapEstimate}`}</span>
-                      <span>Source: {item.source ?? "Unknown"}</span>
-                      <span>Bought: {item.buyPrice ? `$${item.buyPrice}` : "Donation"}</span>
-                      <span>Profit: {profitText(sellOffer, item.buyPrice)}</span>
-                      {item.pricing?.dealLabel ? <span>Original Deal: {item.pricing.dealLabel}</span> : null}
-                      <span className={`priceHeat ${heat.className}`}>{`${heat.label} | Offer: $${sellOffer} | Value: $${resale} | ${sellDifferenceText(sellOffer, resale)}`}</span>
-                    </div>
-                    <small className="repairHint">
-                      {item.status === "Incoming" || item.status === "Needs Cleaning" ? cleanReason
-                        : item.status === "Cleaned" ? testReason
-                        : item.status === "Tested" ? "Ready. Donate, sell, assign to lab, or scrap."
-                        : item.status === "Needs Repair" ? repairReason
-                        : item.status === "Junked" ? "This item is permanently junked. Scrap it for parts."
-                        : null}
-                    </small>
-                    <div className="rowActions">
-                      <button onClick={() => cleanItem(item)} disabled={!canClean || cleanReason !== "Clean intake item. Uses 1 energy."} title={cleanReason}>Clean</button>
-                      <button onClick={() => testItem(item)} disabled={!canTest || testReason !== "Test cleaned item. Uses 1 energy."} title={testReason}>Test</button>
-                      <button onClick={() => repair(item)} className="rowPrimary" disabled={!canRepair || repairReason !== "Repairs use 1 repair slot and energy."} title={repairReason}>Repair</button>
-                      <button onClick={() => setDonationItemId(item.id)} className="rowDonate" title={donateReason}>Donate</button>
-                      <button onClick={() => sell(item)} className="rowSell" disabled={item.status !== "Ready to Sell" && item.status !== "Tested"} title={sellReason}>{`Sell $${sellOffer}`}</button>
-                      <button onClick={() => scrap(item)} className="rowScrap" disabled={isInactiveStatus(item.status)} title={scrapReason}>Scrap</button>
+
+                      {/* Card content */}
+                      <div className="invCardContent">
+
+                        {/* Name + status pill */}
+                        <div className="invCardTitle">
+                          <strong className="invItemName">{item.name}</strong>
+                          <span className={`statusPill ${statusClass(item.status)}`}>{item.status}</span>
+                        </div>
+
+                        {/* Type / condition / quality chips */}
+                        <div className="invBadges">
+                          <span className="invBadge invBadgeType">{item.type}</span>
+                          <span className="invBadge">{item.condition ?? conditionFromStatus(item.status)}</span>
+                          <span className="invBadge">{itemQuality(item)}</span>
+                          {item.source ? <span className="invBadge">{item.source}</span> : null}
+                        </div>
+
+                        {/* Economics */}
+                        <div className="invEcon">
+                          <span className="invEconVal">Sell <strong>${sellOffer}</strong></span>
+                          <span className="invEconVal">Fair <strong>${fair}</strong></span>
+                          <span className="invEconVal">Scrap <strong>${scrapEstimate}</strong></span>
+                          {item.buyPrice != null
+                            ? <span className="invEconVal">Paid <strong>${item.buyPrice}</strong></span>
+                            : <span className="invEconVal">Donated</span>}
+                          <span className={`priceHeat ${heat.className}`}>{heat.label}</span>
+                        </div>
+
+                        {/* Status hint */}
+                        {(item.status === "Incoming" || item.status === "Needs Cleaning"
+                          || item.status === "Cleaned" || item.status === "Needs Repair"
+                          || item.status === "Junked") && (
+                          <small className="repairHint">
+                            {item.status === "Incoming" || item.status === "Needs Cleaning" ? cleanReason
+                              : item.status === "Cleaned" ? testReason
+                              : item.status === "Needs Repair" ? repairReason
+                              : "Permanently junked — scrap for parts."}
+                          </small>
+                        )}
+
+                        {/* Actions */}
+                        <div className="rowActions">
+                          <button onClick={() => cleanItem(item)} disabled={!canClean || cleanReason !== "Clean intake item. Uses 1 energy."} title={cleanReason}>Clean</button>
+                          <button onClick={() => testItem(item)} disabled={!canTest || testReason !== "Test cleaned item. Uses 1 energy."} title={testReason}>Test</button>
+                          <button onClick={() => repair(item)} className="rowPrimary" disabled={!canRepair || repairReason !== "Repairs use 1 repair slot and energy."} title={repairReason}>Repair</button>
+                          <button onClick={() => setDonationItemId(item.id)} className="rowDonate" title={donateReason}>Donate</button>
+                          <button onClick={() => sell(item)} className="rowSell" disabled={item.status !== "Ready to Sell" && item.status !== "Tested"} title={sellReason}>{`Sell $${sellOffer}`}</button>
+                          <button onClick={() => scrap(item)} className="rowScrap" disabled={isInactiveStatus(item.status)} title={scrapReason}>Scrap</button>
+                        </div>
+
+                      </div>
                     </div>
                   </article>
                 );

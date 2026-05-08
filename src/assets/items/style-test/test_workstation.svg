@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="WS_bezel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="WS_screen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#082040"/>
+      <stop offset="100%" stop-color="#030812"/>
+    </linearGradient>
+    <linearGradient id="WS_stand" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2844"/>
+      <stop offset="100%" stop-color="#0d1527"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── MONITOR BEZEL ── -->
+  <rect x="8" y="8" width="112" height="76" rx="5"
+    fill="url(#WS_bezel)" stroke="#08111e" stroke-width="2.5"/>
+  <!-- Gold top cap accent -->
+  <rect x="8" y="8" width="112" height="5" rx="3" fill="#ffd857" opacity="0.48"/>
+  <!-- Right edge depth bevel -->
+  <rect x="116" y="8" width="4" height="76" rx="2" fill="#1e2d4e" opacity="0.5"/>
+
+  <!-- ── SCREEN ── -->
+  <rect x="14" y="14" width="100" height="64" rx="2" fill="url(#WS_screen)"/>
+  <!-- Cyan border glow (soft) -->
+  <rect x="14" y="14" width="100" height="64" rx="2"
+    fill="none" stroke="#2ff8ef" stroke-width="7" opacity="0.12"/>
+  <!-- Cyan border sharp -->
+  <rect x="14" y="14" width="100" height="64" rx="2"
+    fill="none" stroke="#2ff8ef" stroke-width="1.5" opacity="0.9"/>
+
+  <!-- Screen UI content lines -->
+  <line x1="20" y1="28" x2="108" y2="28" stroke="#2ff8ef" stroke-width="1.5" opacity="0.48"/>
+  <line x1="20" y1="38" x2="106" y2="38" stroke="#2ff8ef" stroke-width="1.2" opacity="0.28"/>
+  <line x1="20" y1="48" x2="100" y2="48" stroke="#2ff8ef" stroke-width="1"   opacity="0.18"/>
+
+  <!-- Magenta UI panel (app window hint) -->
+  <rect x="20" y="56" width="32" height="16" rx="2"
+    fill="#ff5fa2" opacity="0.13"/>
+  <rect x="20" y="56" width="32" height="16" rx="2"
+    fill="none" stroke="#ff5fa2" stroke-width="1" opacity="0.5"/>
+  <!-- Gold UI panel -->
+  <rect x="58" y="56" width="22" height="16" rx="2"
+    fill="#ffd857" opacity="0.09"/>
+  <rect x="58" y="56" width="22" height="16" rx="2"
+    fill="none" stroke="#ffd857" stroke-width="1" opacity="0.38"/>
+
+  <!-- Soft screen center ambient glow -->
+  <ellipse cx="64" cy="42" rx="38" ry="20" fill="#2ff8ef" opacity="0.025"/>
+
+  <!-- Magenta power LED bottom-center of bezel -->
+  <circle cx="64" cy="80" r="2.5" fill="#ff5fa2" opacity="0.85"/>
+  <circle cx="64" cy="80" r="6"   fill="#ff5fa2" opacity="0.16"/>
+
+  <!-- ── STAND NECK ── -->
+  <rect x="54" y="84" width="20" height="16" rx="2"
+    fill="url(#WS_stand)" stroke="#08111e" stroke-width="1.5"/>
+  <line x1="56" y1="87" x2="72" y2="87" stroke="#ffd857" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- ── STAND BASE ── -->
+  <rect x="36" y="100" width="56" height="8" rx="4"
+    fill="url(#WS_stand)" stroke="#08111e" stroke-width="1.5"/>
+  <line x1="38" y1="103" x2="90" y2="103" stroke="#ffd857" stroke-width="0.8" opacity="0.35"/>
+</svg>

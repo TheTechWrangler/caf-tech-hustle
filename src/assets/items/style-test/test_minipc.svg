@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="MP_top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#1a2844"/>
+    </linearGradient>
+    <linearGradient id="MP_front" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2440"/>
+      <stop offset="100%" stop-color="#0d1830"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── TOP SURFACE (mild elevation perspective, wider at front) ── -->
+  <polygon points="18,26 110,26 116,74 12,74"
+    fill="url(#MP_top)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Inner panel inset -->
+  <polygon points="24,32 104,32 109,68 19,68"
+    fill="#1e2d4e"/>
+  <!-- Gold top edge accent -->
+  <line x1="18" y1="26" x2="110" y2="26" stroke="#ffd857" stroke-width="1.5" opacity="0.55"/>
+
+  <!-- Vent lines across top surface (subtle dark stripes) -->
+  <line x1="28" y1="40" x2="106" y2="40" stroke="#0d1527" stroke-width="2" opacity="0.75"/>
+  <line x1="29" y1="47" x2="107" y2="47" stroke="#0d1527" stroke-width="2" opacity="0.75"/>
+  <line x1="30" y1="54" x2="108" y2="54" stroke="#0d1527" stroke-width="2" opacity="0.75"/>
+  <line x1="31" y1="61" x2="109" y2="61" stroke="#0d1527" stroke-width="2" opacity="0.75"/>
+
+  <!-- Center logo ring (brand mark / heatsink hole) -->
+  <!-- Outer glow ring -->
+  <ellipse cx="64" cy="50" rx="17" ry="12" fill="none" stroke="#2ff8ef" stroke-width="5" opacity="0.12"/>
+  <!-- Sharp ring -->
+  <ellipse cx="64" cy="50" rx="17" ry="12"
+    fill="#111d35" stroke="#2ff8ef" stroke-width="1.2" opacity="0.82"/>
+  <!-- Inner hub dot -->
+  <ellipse cx="64" cy="50" rx="5.5" ry="4" fill="#2ff8ef" opacity="0.55"/>
+
+  <!-- ── FRONT FACE ── -->
+  <polygon points="12,74 116,74 118,96 10,96"
+    fill="url(#MP_front)" stroke="#08111e" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Cyan top accent line on front face -->
+  <line x1="12" y1="74" x2="116" y2="74" stroke="#2ff8ef" stroke-width="1" opacity="0.38"/>
+
+  <!-- USB port (rectangular) -->
+  <rect x="18" y="79" width="14" height="9" rx="2"
+    fill="#070d1d" stroke="#1a2844" stroke-width="0.8"/>
+  <!-- Small round port -->
+  <rect x="37" y="80" width="9" height="7" rx="1.5"
+    fill="#070d1d" stroke="#1a2844" stroke-width="0.8"/>
+  <!-- SD card slot -->
+  <rect x="51" y="81" width="10" height="5" rx="1"
+    fill="#070d1d" stroke="#1a2844" stroke-width="0.8"/>
+
+  <!-- Power LED: gold -->
+  <circle cx="100" cy="85" r="5"   fill="#ffd857" opacity="0.9"/>
+  <circle cx="100" cy="85" r="10"  fill="#ffd857" opacity="0.14"/>
+  <!-- Activity LED: cyan -->
+  <circle cx="113" cy="85" r="3.5" fill="#2ff8ef" opacity="0.85"/>
+  <circle cx="113" cy="85" r="7"   fill="#2ff8ef" opacity="0.14"/>
+
+  <!-- ── BOTTOM EDGE ── -->
+  <polygon points="10,96 118,96 116,102 12,102"
+    fill="#0a1220" stroke="#08111e" stroke-width="1"/>
+</svg>

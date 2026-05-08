@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="N_top" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#1a2844"/>
+    </linearGradient>
+    <linearGradient id="N_front" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2440"/>
+      <stop offset="100%" stop-color="#0d1830"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── LEFT ANTENNA (leans slightly outward) ── -->
+  <!-- Glow pass -->
+  <line x1="34" y1="62" x2="24" y2="6"
+    stroke="#2ff8ef" stroke-width="8" stroke-linecap="round" opacity="0.12"/>
+  <!-- Sharp pass -->
+  <line x1="34" y1="62" x2="24" y2="6"
+    stroke="#2ff8ef" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+  <!-- Tip dot -->
+  <circle cx="24" cy="6" r="3" fill="#2ff8ef" opacity="0.9"/>
+  <circle cx="24" cy="6" r="6" fill="#2ff8ef" opacity="0.2"/>
+  <!-- Base mount -->
+  <rect x="30" y="58" width="8" height="10" rx="2"
+    fill="#1a2844" stroke="#08111e" stroke-width="1.5"/>
+
+  <!-- ── RIGHT ANTENNA (leans slightly outward) ── -->
+  <!-- Glow pass -->
+  <line x1="94" y1="62" x2="104" y2="6"
+    stroke="#2ff8ef" stroke-width="8" stroke-linecap="round" opacity="0.12"/>
+  <!-- Sharp pass -->
+  <line x1="94" y1="62" x2="104" y2="6"
+    stroke="#2ff8ef" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+  <!-- Tip dot -->
+  <circle cx="104" cy="6" r="3" fill="#2ff8ef" opacity="0.9"/>
+  <circle cx="104" cy="6" r="6" fill="#2ff8ef" opacity="0.2"/>
+  <!-- Base mount -->
+  <rect x="90" y="58" width="8" height="10" rx="2"
+    fill="#1a2844" stroke="#08111e" stroke-width="1.5"/>
+
+  <!-- ── ROUTER BODY: TOP SURFACE (mild perspective) ── -->
+  <polygon points="12,62 116,62 120,84 8,84"
+    fill="url(#N_top)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Gold top accent line -->
+  <line x1="12" y1="62" x2="116" y2="62" stroke="#ffd857" stroke-width="1.5" opacity="0.55"/>
+
+  <!-- Port cutouts on top surface (WAN/LAN ports facing back) -->
+  <rect x="48" y="66" width="9" height="6" rx="1" fill="#070d1d" stroke="#1a2844" stroke-width="0.5"/>
+  <rect x="61" y="66" width="9" height="6" rx="1" fill="#070d1d" stroke="#1a2844" stroke-width="0.5"/>
+  <rect x="74" y="66" width="9" height="6" rx="1" fill="#070d1d" stroke="#1a2844" stroke-width="0.5"/>
+
+  <!-- ── ROUTER BODY: FRONT FACE ── -->
+  <polygon points="8,84 120,84 122,108 6,108"
+    fill="url(#N_front)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Front face inner panel -->
+  <polygon points="12,88 116,88 118,104 10,104"
+    fill="#070d1d"/>
+  <!-- Cyan top accent on front face -->
+  <line x1="8" y1="84" x2="120" y2="84" stroke="#2ff8ef" stroke-width="1" opacity="0.4"/>
+
+  <!-- LED ROW: power / WAN / LAN / WiFi -->
+  <!-- Power: gold -->
+  <circle cx="24" cy="96" r="5"   fill="#ffd857" opacity="0.9"/>
+  <circle cx="24" cy="96" r="10"  fill="#ffd857" opacity="0.14"/>
+  <!-- WAN: cyan bright -->
+  <circle cx="42" cy="96" r="4.5" fill="#2ff8ef" opacity="0.9"/>
+  <circle cx="42" cy="96" r="9"   fill="#2ff8ef" opacity="0.14"/>
+  <!-- LAN 1: cyan mid -->
+  <circle cx="58" cy="96" r="4"   fill="#2ff8ef" opacity="0.7"/>
+  <circle cx="58" cy="96" r="8"   fill="#2ff8ef" opacity="0.12"/>
+  <!-- LAN 2: cyan dim -->
+  <circle cx="74" cy="96" r="4"   fill="#2ff8ef" opacity="0.45"/>
+  <circle cx="74" cy="96" r="8"   fill="#2ff8ef" opacity="0.08"/>
+  <!-- WiFi: magenta -->
+  <circle cx="90" cy="96" r="4.5" fill="#ff5fa2" opacity="0.9"/>
+  <circle cx="90" cy="96" r="9"   fill="#ff5fa2" opacity="0.14"/>
+  <!-- Idle LED: dark -->
+  <circle cx="107" cy="96" r="3.5" fill="#1a2844" stroke="#253557" stroke-width="1"/>
+
+  <!-- ── BOTTOM EDGE ── -->
+  <polygon points="6,108 122,108 120,114 8,114"
+    fill="#0a1220" stroke="#08111e" stroke-width="1"/>
+</svg>

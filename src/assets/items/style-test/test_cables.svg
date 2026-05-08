@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="C_plug" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="C_tip" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1e2d4e"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ══ MAIN CONNECTOR BODY (left, USB-A style) ══ -->
+  <!-- Housing -->
+  <rect x="6" y="44" width="36" height="40" rx="4"
+    fill="url(#C_plug)" stroke="#08111e" stroke-width="2.5"/>
+  <!-- Gold housing ring accent -->
+  <rect x="6" y="44" width="36" height="40" rx="4"
+    fill="none" stroke="#ffd857" stroke-width="1.2" opacity="0.5"/>
+  <!-- Plug face: two port slots -->
+  <rect x="11" y="51" width="24" height="10" rx="2" fill="#070d1d" stroke="#1a2844" stroke-width="1"/>
+  <rect x="11" y="65" width="24" height="10" rx="2" fill="#070d1d" stroke="#1a2844" stroke-width="1"/>
+  <!-- Gold contact pins in top slot -->
+  <rect x="13" y="53" width="5" height="6" rx="1" fill="#ffd857" opacity="0.9"/>
+  <rect x="21" y="53" width="5" height="6" rx="1" fill="#ffd857" opacity="0.9"/>
+  <rect x="29" y="53" width="4" height="6" rx="1" fill="#ffd857" opacity="0.7"/>
+  <!-- Cyan status LED on housing -->
+  <circle cx="38" cy="47" r="3"   fill="#2ff8ef" opacity="0.9"/>
+  <circle cx="38" cy="47" r="7"   fill="#2ff8ef" opacity="0.15"/>
+  <!-- Cable exit collar -->
+  <rect x="40" y="50" width="8" height="28" rx="4"
+    fill="#1a2844" stroke="#08111e" stroke-width="1.5"/>
+
+  <!-- ══ CABLE 1 — CYAN, arcs up-right ══ -->
+  <!-- Glow (wide, soft) -->
+  <path d="M 48,58 C 74,58 70,24 104,22"
+    stroke="#2ff8ef" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.14"/>
+  <!-- Cable body -->
+  <path d="M 48,58 C 74,58 70,24 104,22"
+    stroke="#2ff8ef" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <!-- Connector tip -->
+  <rect x="104" y="16" width="16" height="12" rx="3"
+    fill="url(#C_tip)" stroke="#2ff8ef" stroke-width="1.5"/>
+  <rect x="119" y="18" width="5" height="8" rx="1.5"
+    fill="#2ff8ef" opacity="0.85"/>
+
+  <!-- ══ CABLE 2 — MAGENTA, goes straight across ══ -->
+  <!-- Glow -->
+  <path d="M 48,64 C 76,64 76,64 104,64"
+    stroke="#ff5fa2" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.14"/>
+  <!-- Cable body -->
+  <path d="M 48,64 C 76,64 76,64 104,64"
+    stroke="#ff5fa2" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <!-- Connector tip -->
+  <rect x="104" y="58" width="16" height="12" rx="3"
+    fill="url(#C_tip)" stroke="#ff5fa2" stroke-width="1.5"/>
+  <rect x="119" y="60" width="5" height="8" rx="1.5"
+    fill="#ff5fa2" opacity="0.85"/>
+
+  <!-- ══ CABLE 3 — GOLD, arcs down-right ══ -->
+  <!-- Glow -->
+  <path d="M 48,70 C 74,70 70,104 104,106"
+    stroke="#ffd857" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.14"/>
+  <!-- Cable body -->
+  <path d="M 48,70 C 74,70 70,104 104,106"
+    stroke="#ffd857" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.95"/>
+  <!-- Connector tip -->
+  <rect x="104" y="100" width="16" height="12" rx="3"
+    fill="url(#C_tip)" stroke="#ffd857" stroke-width="1.5"/>
+  <rect x="119" y="102" width="5" height="8" rx="1.5"
+    fill="#ffd857" opacity="0.85"/>
+</svg>

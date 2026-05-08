@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="DP_bezel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#253557"/>
+      <stop offset="100%" stop-color="#111d35"/>
+    </linearGradient>
+    <linearGradient id="DP_screen" x1="0%" y1="0%" x2="10%" y2="100%">
+      <stop offset="0%" stop-color="#0a2848"/>
+      <stop offset="100%" stop-color="#030812"/>
+    </linearGradient>
+    <linearGradient id="DP_stand" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2844"/>
+      <stop offset="100%" stop-color="#0d1527"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── THIN RIGHT EDGE (shows panel depth / flat-panel silhouette) ── -->
+  <polygon points="102,14 112,20 112,76 102,70"
+    fill="#1a2844" stroke="#08111e" stroke-width="1.5"/>
+  <line x1="112" y1="20" x2="112" y2="76" stroke="#253557" stroke-width="1" opacity="0.5"/>
+
+  <!-- ── MONITOR BEZEL (mild 3/4 perspective) ── -->
+  <polygon points="12,12 102,14 102,70 12,68"
+    fill="url(#DP_bezel)" stroke="#08111e" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- Gold top accent line -->
+  <line x1="12" y1="12" x2="102" y2="14" stroke="#ffd857" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- ── SCREEN ── -->
+  <polygon points="18,18 96,20 96,64 18,62"
+    fill="url(#DP_screen)"/>
+  <!-- Cyan border glow (soft) -->
+  <polygon points="18,18 96,20 96,64 18,62"
+    fill="none" stroke="#2ff8ef" stroke-width="7" opacity="0.12"/>
+  <!-- Cyan border sharp -->
+  <polygon points="18,18 96,20 96,64 18,62"
+    fill="none" stroke="#2ff8ef" stroke-width="1.5" opacity="0.9"/>
+
+  <!-- Screen content: strong central glow suggesting bright active display -->
+  <ellipse cx="56" cy="41" rx="32" ry="18" fill="#2ff8ef" opacity="0.05"/>
+  <line x1="24" y1="30" x2="90" y2="31" stroke="#2ff8ef" stroke-width="1.5" opacity="0.45"/>
+  <line x1="24" y1="40" x2="88" y2="41" stroke="#2ff8ef" stroke-width="1.2" opacity="0.28"/>
+  <line x1="24" y1="50" x2="84" y2="51" stroke="#ff5fa2" stroke-width="1"   opacity="0.35"/>
+  <!-- Magenta accent bar on screen (unique to Display, not in Workstation) -->
+  <polygon points="24,54 72,55 72,60 24,59"
+    fill="#ff5fa2" opacity="0.14"/>
+  <polygon points="24,54 72,55 72,60 24,59"
+    fill="none" stroke="#ff5fa2" stroke-width="0.8" opacity="0.5"/>
+
+  <!-- Power LED bottom-center of bezel -->
+  <circle cx="57" cy="72" r="2.5" fill="#2ff8ef" opacity="0.85"/>
+  <circle cx="57" cy="72" r="6"   fill="#2ff8ef" opacity="0.16"/>
+
+  <!-- ── STAND NECK ── -->
+  <rect x="50" y="76" width="14" height="14" rx="2"
+    fill="url(#DP_stand)" stroke="#08111e" stroke-width="1.5"/>
+  <line x1="51" y1="79" x2="63" y2="79" stroke="#ffd857" stroke-width="0.8" opacity="0.4"/>
+
+  <!-- ── STAND BASE ── -->
+  <rect x="30" y="90" width="54" height="8" rx="4"
+    fill="url(#DP_stand)" stroke="#08111e" stroke-width="1.5"/>
+  <line x1="32" y1="93" x2="82" y2="93" stroke="#ffd857" stroke-width="0.8" opacity="0.35"/>
+</svg>
