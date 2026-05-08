@@ -62,7 +62,6 @@ export function OperationsDashboard({
   onCompleteHosting: (project: HostingProjectDefinition) => void;
 }) {
   const selectedItem = activeItems.find((item) => item.id === selectedItemId) ?? null;
-  const businessItems = activeItems.filter(isBusinessSaleEligible);
   const storageItems = stableStorageItemsForDisplay(activeItems);
   const labNeeds = labStationCatalog.filter((station) => (game.labStations[station.name] ?? 0) < station.maxLevel);
   const infraNeeds = infrastructureCatalog.filter((facility) => (game.ownedInfrastructure[facility.name] ?? 0) < facility.maxLevel);
@@ -155,57 +154,69 @@ export function OperationsDashboard({
             const donationReason = canDonateItem(item)
               ? "Open donation/use options: General Donate, requests, Lab, Infrastructure, Hosting, or Bulk Buy when valid."
               : donateReason;
+
+            // Context-sensitive primary action: Clean → Test → Repair → null
+            const canClean  = cleanReason  === "Clean intake item. Uses 1 energy.";
+            const canTest   = testReason   === "Test cleaned item. Uses 1 energy.";
+            const canRepair = repairReason === "Repairs use 1 repair slot and energy.";
+            const primaryLabel  = canClean ? "Clean" : canTest ? "Test" : canRepair ? "Repair" : "Ready";
+            const primaryTitle  = canClean ? cleanReason : canTest ? testReason : canRepair ? repairReason : "No processing action available";
+            const primaryAction = canClean ? onClean : canTest ? onTest : canRepair ? onRepair : null;
+            const canBusinessSale = isBusinessSaleEligible(item);
+            const bizOffer = canBusinessSale ? businessOfferForItem(item, game, labProgress(game)) : null;
+
             return (
               <article className={`opsStorageItem ${selected ? "selected" : ""} ${highlighted ? "highlighted" : ""}`} key={item.id} onClick={() => onSelectItem(selected ? null : item.id)}>
                 <div className="opsCardLayout">
-
-                  {/* Art zone */}
-                  <div className="opsArtZone">
-                    {itemArt[item.type]
-                      ? <img src={itemArt[item.type]} alt={item.type} className="opsArtThumb" />
-                      : null}
+                  <div className="opsCardTop">
+                    <div className="opsArtZone">
+                      {itemArt[item.type]
+                        ? <img src={itemArt[item.type]} alt={item.type} className="opsArtThumb" />
+                        : null}
+                    </div>
+                    <div className="opsCardIdentity">
+                      <strong className="opsCardName">{item.name}</strong>
+                      <div className="opsCardBadges">
+                        <span className={`statusPill ${statusClass(item.status)}`}>{item.status}</span>
+                        <span className="opsBadge opsBadgeType">{item.type}</span>
+                        <span className="opsBadge">{item.condition ?? conditionFromStatus(item.status)}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Card content */}
-                  <div className="opsCardContent">
-
-                    {/* Name + status */}
-                    <div className="opsCardTitle">
-                      <strong>{item.name}</strong>
-                      <span className={`statusPill ${statusClass(item.status)}`}>{item.status}</span>
+                  {itemOperationTags(item, game).length > 0 && (
+                    <div className="opsTags">
+                      {itemOperationTags(item, game).map((tag) => <span key={tag}>{tag}</span>)}
                     </div>
+                  )}
+                  {reservedBulk ? <small className="capWarning">{item.source}</small> : null}
 
-                    {/* Type / condition chips */}
-                    <div className="opsBadges">
-                      <span className="opsBadge opsBadgeType">{item.type}</span>
-                      <span className="opsBadge">{item.condition ?? conditionFromStatus(item.status)}</span>
-                    </div>
+                  <div className="opsValueGrid">
+                    <span>Fair <strong>${itemFairValue(item)}</strong></span>
+                    <span>Sell <strong>${itemResaleEstimate(item)}</strong></span>
+                    <span>Scrap <strong>${scrapValue(item)}</strong></span>
+                    <span className={canBusinessSale && bizOffer ? "opsBizValue" : "opsValueMuted"}>
+                      Biz <strong>{canBusinessSale && bizOffer ? `$${bizOffer.value}` : "N/A"}</strong>
+                    </span>
+                  </div>
 
-                    {/* Economics */}
-                    <div className="opsEcon">
-                      <span className="opsEconVal">Fair <strong>${itemFairValue(item)}</strong></span>
-                      <span className="opsEconVal">Resale <strong>${itemResaleEstimate(item)}</strong></span>
-                      <span className="opsEconVal">Scrap <strong>${scrapValue(item)}</strong></span>
-                    </div>
-
-                    {/* Operation tags */}
-                    {itemOperationTags(item, game).length > 0 && (
-                      <div className="opsTags">
-                        {itemOperationTags(item, game).map((tag) => <span key={tag}>{tag}</span>)}
-                      </div>
-                    )}
-                    {reservedBulk ? <small className="capWarning">{item.source}</small> : null}
-
-                    {/* Actions */}
-                    <div className="rowActions">
-                      <button title={cleanReason} onClick={(event) => { event.stopPropagation(); onClean(item); }} disabled={cleanReason !== "Clean intake item. Uses 1 energy."}>Clean</button>
-                      <button title={testReason} onClick={(event) => { event.stopPropagation(); onTest(item); }} disabled={testReason !== "Test cleaned item. Uses 1 energy."}>Test</button>
-                      <button title={repairReason} onClick={(event) => { event.stopPropagation(); onRepair(item); }} disabled={repairReason !== "Repairs use 1 repair slot and energy."}>Repair</button>
+                  <div className="opsCardActions">
+                    <button
+                      className="opsPrimary opsActionPrimary"
+                      title={primaryTitle}
+                      disabled={!primaryAction}
+                      onClick={(event) => { event.stopPropagation(); primaryAction?.(item); }}
+                    >{primaryLabel}</button>
+                    {canBusinessSale && bizOffer ? (
+                      <button className="opsBizSale" title={bizOffer.label} onClick={(event) => { event.stopPropagation(); onBusinessSale(item); }}>
+                        Biz Sale <strong>${bizOffer.value}</strong>
+                      </button>
+                    ) : null}
+                    <div className="opsActionsSec">
                       <button title={donationReason} onClick={(event) => { event.stopPropagation(); onDonate(item); }}>Donate</button>
                       <button title={sellReason} onClick={(event) => { event.stopPropagation(); onSell(item); }} disabled={item.status !== "Ready to Sell" && item.status !== "Tested"}>Sell</button>
-                      <button title={scrapReason} onClick={(event) => { event.stopPropagation(); onScrap(item); }} disabled={isInactiveStatus(item.status)}>Scrap</button>
+                      <button title={scrapReason} className="rowScrap" onClick={(event) => { event.stopPropagation(); onScrap(item); }} disabled={isInactiveStatus(item.status)}>Scrap</button>
                     </div>
-
                   </div>
                 </div>
               </article>
@@ -231,21 +242,6 @@ export function OperationsDashboard({
               )}
             </article>
           ))}
-        </div>
-      </section>
-      <section className="opsBusinessPanel">
-        <PanelTitle heading="Business Sale Requests" sub={`${businessItems.length} ready`} />
-        <div className="opsDemandBody">
-          {businessItems.length ? businessItems.map((item) => {
-            const offer = businessOfferForItem(item, game, labProgress(game));
-            return (
-              <article className="opsDemandCard" key={item.id} onMouseEnter={() => onSelectDemand("business")}>
-                <div><strong>{item.name}</strong><span>${offer.value}</span></div>
-                <p>{offer.label}. Requires cleaned/tested business-ready gear.</p>
-                <button onClick={() => onBusinessSale(item)}>Fulfill Business Sale Request</button>
-              </article>
-            );
-          }) : <div className="emptyZone compact">No business-ready storage items.</div>}
         </div>
       </section>
     </div>

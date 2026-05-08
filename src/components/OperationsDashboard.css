@@ -1,8 +1,8 @@
 .opsDashboardGrid {
   display: grid;
-  grid-template-columns: minmax(320px, 1.15fr) minmax(300px, 1fr) minmax(300px, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(292px, 27%);
   grid-template-rows: minmax(0, 1fr);
-  gap: 10px;
+  gap: 14px;
   height: 100%;
   min-height: 0;
 }
@@ -19,7 +19,15 @@
   grid-row: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-width: 0;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid rgba(89, 207, 255, 0.16);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(47, 248, 239, 0.08), transparent 34%),
+    radial-gradient(circle at 92% 18%, rgba(255, 95, 162, 0.07), transparent 34%),
+    linear-gradient(180deg, rgba(9, 18, 38, 0.72), rgba(5, 9, 22, 0.48));
 }
 
 .opsResetLayout {
@@ -30,12 +38,14 @@
 
 .opsStorageList {
   display: grid;
-  gap: 7px;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 10px;
   align-content: start;
-  grid-auto-rows: max-content;
+  align-items: stretch;
+  grid-auto-rows: 370px;
   flex: 1;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding: 3px 3px 10px;
 }
 
 .opsStorageItem,
@@ -48,104 +58,232 @@
 }
 
 .opsStorageItem {
+  position: relative;
   cursor: pointer;
-  align-self: start;
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(26, 30, 52, 0.98), rgba(12, 15, 32, 0.98));
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  height: 370px;
+  padding: 8px 10px 10px;
+  border-color: rgba(97, 99, 124, 0.9);
+  border-radius: 10px;
+  background:
+    linear-gradient(155deg, rgba(47, 248, 239, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(26, 37, 67, 0.96), rgba(9, 14, 31, 0.98));
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32), inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  overflow: hidden;
 }
 
-/* Ops storage card layout */
+.opsStorageItem::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, rgba(47, 248, 239, 0.15), rgba(47, 248, 239, 0.82), rgba(255, 216, 87, 0.22));
+  opacity: 0.82;
+}
+
+/* Ops storage card layout: compact inventory card stack */
 .opsCardLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.opsCardTop {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 112px minmax(0, 1fr);
   align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 112px;
 }
 
 .opsArtZone {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  border: 1px solid rgba(47, 248, 239, 0.28);
-  border-radius: 7px;
+  width: 112px;
+  height: 112px;
+  border: 1px solid rgba(47, 248, 239, 0.48);
+  border-radius: 10px;
+  color: var(--cyan);
   background:
-    radial-gradient(circle at 50% 35%, rgba(47, 248, 239, 0.11), transparent 62%),
-    rgba(5, 9, 22, 0.7);
+    radial-gradient(circle at 50% 35%, rgba(47, 248, 239, 0.2), transparent 62%),
+    rgba(5, 9, 22, 0.55);
+  box-shadow: inset 0 0 18px rgba(47, 248, 239, 0.08), 0 0 12px rgba(47, 248, 239, 0.1);
   flex-shrink: 0;
 }
 
 .opsArtThumb {
-  width: 44px;
-  height: 44px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
 }
 
-.opsCardContent {
+.opsCardIdentity {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
+  min-height: 96px;
+  padding-top: 2px;
 }
 
-.opsCardTitle {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 5px;
-  min-width: 0;
-}
-
-.opsCardTitle strong {
-  font-size: 13px;
-  font-weight: 900;
-  color: #f7f2d6;
-  overflow-wrap: anywhere;
-  line-height: 1.2;
-}
-
-.opsBadges {
+.opsCardBadges {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
+  justify-content: flex-start;
+  align-content: start;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.opsCardName {
+  color: #ffffff;
+  font-size: 17px;
+  line-height: 1.12;
+  text-align: center;
+  overflow-wrap: anywhere;
+  text-shadow: 0 0 12px rgba(47, 248, 239, 0.12);
+}
+
+.opsValueGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: auto;
+  min-height: 77px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #98a5c2;
+}
+
+.opsValueGrid span {
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid rgba(89, 207, 255, 0.12);
+  border-radius: 7px;
+  background: rgba(5, 9, 22, 0.34);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.opsValueGrid strong {
+  display: block;
+  margin-top: 2px;
+  color: #f7f2d6;
+  font-size: 13px;
+}
+
+.opsValueGrid .opsBizValue {
+  border-color: rgba(255, 216, 87, 0.28);
+  color: #ffd857;
+}
+
+.opsValueGrid .opsValueMuted {
+  color: #7d849e;
+  opacity: 0.76;
 }
 
 .opsBadge {
-  padding: 1px 6px;
+  padding: 1px 4px;
   border-radius: 999px;
-  border: 1px solid rgba(89, 207, 255, 0.2);
-  background: rgba(9, 18, 38, 0.8);
-  color: #8a93b2;
+  border: 1px solid rgba(89, 207, 255, 0.14);
+  background: rgba(9, 18, 38, 0.52);
+  color: #8d98b5;
   font-size: 9px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.03em;
   white-space: nowrap;
 }
 
 .opsBadgeType {
-  border-color: rgba(47, 248, 239, 0.44);
-  color: #2ff8ef;
-}
-
-.opsEcon {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-}
-
-.opsEconVal {
-  padding: 1px 6px;
-  border-radius: 4px;
-  border: 1px solid #232538;
-  background: #111420;
-  font-size: 9px;
+  border-color: rgba(47, 248, 239, 0.28);
   color: #7ee7c8;
 }
 
-.opsEconVal strong {
-  color: #f7f2d6;
+.opsCardActions {
+  display: grid;
+  gap: 5px;
+  min-height: 120px;
+  margin-top: auto;
+  align-content: start;
+}
+
+.opsActionPrimary {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  box-shadow: 1px 2px 0 #05050a;
+}
+
+.opsActionPrimary:not(:disabled) {
+  background: linear-gradient(180deg, #178c83, #0d5c58);
+  border-color: #2ff8ef;
+  color: #ffffff;
+}
+
+.opsActionsSec {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.opsActionsSec button {
+  min-width: 0;
+  min-height: 24px;
+  padding: 3px 4px;
+  font-size: 9px;
+  font-weight: 900;
+  border-radius: 6px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.opsActionsSec button:not(:disabled):not(.rowScrap) {
+  background: rgba(37, 40, 60, 0.72);
+  border-color: rgba(97, 99, 124, 0.6);
+  color: #aeb7d3;
+}
+
+.opsActionsSec button:not(:disabled).rowScrap {
+  background: rgba(40, 24, 32, 0.76);
+  border-color: rgba(208, 76, 113, 0.74);
+  color: #ffb0c4;
+}
+
+.opsBizSale {
+  width: 100%;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 900;
+  min-height: 24px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(42, 26, 0, 0.84), rgba(26, 15, 0, 0.84));
+  border: 1px solid rgba(255, 216, 87, 0.74);
+  border-radius: 6px;
+  color: #ffd857;
+  box-shadow: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.opsBizSale strong {
+  color: #fff8d6;
+}
+
+.opsBizSale:hover {
+  background: linear-gradient(180deg, #3a2500, #261800);
+  border-color: #ffe680;
 }
 
 .opsStorageItem.selected,
@@ -154,20 +292,17 @@
   background: #252318;
 }
 
-.opsStorageItem > div:first-child,
 .opsDemandCard > div:first-child {
   display: flex;
   justify-content: space-between;
   gap: 8px;
 }
 
-.opsStorageItem strong,
 .opsDemandCard strong,
 .opsSelectedUse strong {
   color: #ffffff;
 }
 
-.opsStorageItem span,
 .opsDemandCard p,
 .opsDemandCard small,
 .opsSelectedUse span {
@@ -212,22 +347,19 @@
   grid-row: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
-  overflow: hidden;
-  border: 1px solid #61637c;
-  background: rgba(11, 12, 24, 0.35);
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid rgba(47, 248, 239, 0.36);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(47, 248, 239, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(7, 18, 37, 0.96), rgba(5, 9, 22, 0.98)),
+    rgba(8, 13, 28, 0.96);
+  box-shadow: 0 0 24px rgba(47, 248, 239, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.035);
 }
 
-.opsBusinessPanel {
-  grid-column: 3;
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid #61637c;
-  background: rgba(11, 12, 24, 0.35);
-}
 
 .opsDemandPanel.bulk {
   grid-column: 3;
