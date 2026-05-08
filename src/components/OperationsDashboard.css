@@ -50,6 +50,102 @@
 .opsStorageItem {
   cursor: pointer;
   align-self: start;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(26, 30, 52, 0.98), rgba(12, 15, 32, 0.98));
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+/* Ops storage card layout */
+.opsCardLayout {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.opsArtZone {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(47, 248, 239, 0.28);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(47, 248, 239, 0.11), transparent 62%),
+    rgba(5, 9, 22, 0.7);
+  flex-shrink: 0;
+}
+
+.opsArtThumb {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.opsCardContent {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.opsCardTitle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 5px;
+  min-width: 0;
+}
+
+.opsCardTitle strong {
+  font-size: 13px;
+  font-weight: 900;
+  color: #f7f2d6;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.opsBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.opsBadge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(89, 207, 255, 0.2);
+  background: rgba(9, 18, 38, 0.8);
+  color: #8a93b2;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.opsBadgeType {
+  border-color: rgba(47, 248, 239, 0.44);
+  color: #2ff8ef;
+}
+
+.opsEcon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.opsEconVal {
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #232538;
+  background: #111420;
+  font-size: 9px;
+  color: #7ee7c8;
+}
+
+.opsEconVal strong {
+  color: #f7f2d6;
+  font-weight: 900;
 }
 
 .opsStorageItem.selected,

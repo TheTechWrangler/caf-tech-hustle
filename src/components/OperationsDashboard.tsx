@@ -1,6 +1,7 @@
 import type { GameState, InventoryItem, LabStationName, InfrastructureDefinition, HostingProjectDefinition } from "../types";
 import "./OperationsDashboard.css";
-import { infrastructureStats, conditionFromStatus, isInactiveStatus, labProgress, hostingWeeklyPayout } from "../utils";
+import { infrastructureStats, conditionFromStatus, isInactiveStatus, labProgress, hostingWeeklyPayout, statusClass } from "../utils";
+import { itemArt } from "../assets/itemArt";
 import {
   itemOperationTags, demandMatchesItem,
   availableLabItems, labCapReason,
@@ -156,26 +157,56 @@ export function OperationsDashboard({
               : donateReason;
             return (
               <article className={`opsStorageItem ${selected ? "selected" : ""} ${highlighted ? "highlighted" : ""}`} key={item.id} onClick={() => onSelectItem(selected ? null : item.id)}>
-                <div>
-                  <strong>{item.name}</strong>
-                  <span>{item.type} | {item.condition ?? conditionFromStatus(item.status)} | {item.status}</span>
-                </div>
-                <div className="requestMeta">
-                  <span>Fair ${itemFairValue(item)}</span>
-                  <span>Resale ${itemResaleEstimate(item)}</span>
-                  <span>Scrap ${scrapValue(item)}</span>
-                </div>
-                <div className="opsTags">
-                  {itemOperationTags(item, game).map((tag) => <span key={tag}>{tag}</span>)}
-                </div>
-                {reservedBulk ? <small className="capWarning">{item.source}</small> : null}
-                <div className="rowActions">
-                  <button title={cleanReason} onClick={(event) => { event.stopPropagation(); onClean(item); }} disabled={cleanReason !== "Clean intake item. Uses 1 energy."}>Clean</button>
-                  <button title={testReason} onClick={(event) => { event.stopPropagation(); onTest(item); }} disabled={testReason !== "Test cleaned item. Uses 1 energy."}>Test</button>
-                  <button title={repairReason} onClick={(event) => { event.stopPropagation(); onRepair(item); }} disabled={repairReason !== "Repairs use 1 repair slot and energy."}>Repair</button>
-                  <button title={donationReason} onClick={(event) => { event.stopPropagation(); onDonate(item); }}>Donate</button>
-                  <button title={sellReason} onClick={(event) => { event.stopPropagation(); onSell(item); }} disabled={item.status !== "Ready to Sell" && item.status !== "Tested"}>Sell</button>
-                  <button title={scrapReason} onClick={(event) => { event.stopPropagation(); onScrap(item); }} disabled={isInactiveStatus(item.status)}>Scrap</button>
+                <div className="opsCardLayout">
+
+                  {/* Art zone */}
+                  <div className="opsArtZone">
+                    {itemArt[item.type]
+                      ? <img src={itemArt[item.type]} alt={item.type} className="opsArtThumb" />
+                      : null}
+                  </div>
+
+                  {/* Card content */}
+                  <div className="opsCardContent">
+
+                    {/* Name + status */}
+                    <div className="opsCardTitle">
+                      <strong>{item.name}</strong>
+                      <span className={`statusPill ${statusClass(item.status)}`}>{item.status}</span>
+                    </div>
+
+                    {/* Type / condition chips */}
+                    <div className="opsBadges">
+                      <span className="opsBadge opsBadgeType">{item.type}</span>
+                      <span className="opsBadge">{item.condition ?? conditionFromStatus(item.status)}</span>
+                    </div>
+
+                    {/* Economics */}
+                    <div className="opsEcon">
+                      <span className="opsEconVal">Fair <strong>${itemFairValue(item)}</strong></span>
+                      <span className="opsEconVal">Resale <strong>${itemResaleEstimate(item)}</strong></span>
+                      <span className="opsEconVal">Scrap <strong>${scrapValue(item)}</strong></span>
+                    </div>
+
+                    {/* Operation tags */}
+                    {itemOperationTags(item, game).length > 0 && (
+                      <div className="opsTags">
+                        {itemOperationTags(item, game).map((tag) => <span key={tag}>{tag}</span>)}
+                      </div>
+                    )}
+                    {reservedBulk ? <small className="capWarning">{item.source}</small> : null}
+
+                    {/* Actions */}
+                    <div className="rowActions">
+                      <button title={cleanReason} onClick={(event) => { event.stopPropagation(); onClean(item); }} disabled={cleanReason !== "Clean intake item. Uses 1 energy."}>Clean</button>
+                      <button title={testReason} onClick={(event) => { event.stopPropagation(); onTest(item); }} disabled={testReason !== "Test cleaned item. Uses 1 energy."}>Test</button>
+                      <button title={repairReason} onClick={(event) => { event.stopPropagation(); onRepair(item); }} disabled={repairReason !== "Repairs use 1 repair slot and energy."}>Repair</button>
+                      <button title={donationReason} onClick={(event) => { event.stopPropagation(); onDonate(item); }}>Donate</button>
+                      <button title={sellReason} onClick={(event) => { event.stopPropagation(); onSell(item); }} disabled={item.status !== "Ready to Sell" && item.status !== "Tested"}>Sell</button>
+                      <button title={scrapReason} onClick={(event) => { event.stopPropagation(); onScrap(item); }} disabled={isInactiveStatus(item.status)}>Scrap</button>
+                    </div>
+
+                  </div>
                 </div>
               </article>
             );
