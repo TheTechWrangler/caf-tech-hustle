@@ -30,7 +30,6 @@ import {
   Zap
 } from "lucide-react";
 import "./styles.css";
-import { itemArt } from "./assets/itemArt";
 import type {
   ItemType, StorageStatus, LocationName, ServiceNeed, RequestNeed,
   DonationTier, DonationCondition, RevealedDonationCondition, ItemCondition,
@@ -368,8 +367,6 @@ function requestAvailability(state: GameState, request: CommunityRequest) {
 
 
 function itemTypeIcon(type: string) {
-  const art = itemArt[type];
-  if (art) return <img src={art} alt={type} className="itemArtImg" />;
   const size = 22;
   switch (type) {
     case "Laptop": return <Laptop size={size} />;

@@ -1060,12 +1060,6 @@ h2 {
   filter: drop-shadow(0 0 7px rgba(47, 248, 239, 0.32));
 }
 
-.itemArtImg {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
-
 .marketCardBadges {
   display: flex;
   flex-wrap: wrap;
